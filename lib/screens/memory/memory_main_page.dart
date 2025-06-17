@@ -136,7 +136,7 @@ class _MemoryMainPageState extends State<MemoryMainPage> with SingleTickerProvid
               Expanded(
                 child: GestureDetector(
                   onTap: (){
-                    Navigator.pushNamed(context, '/timeline');
+                    Navigator.pushReplacementNamed(context, '/timeline');
                   },
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,

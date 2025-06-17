@@ -33,9 +33,30 @@ class CapsuleRepository {
     return _firestoreService.getCapsules();
   }
 
-  Stream<List<TimeCapsule>> streamCapsules() {
-    return _firestoreService.getCapsulesStream();
+  Stream<List<TimeCapsule>> streamLockedCapsules() {
+    return _firestoreService.streamLockedCapsules();
   }
+
+  Stream<List<TimeCapsule>> streamUnlockedCapsules() {
+    return _firestoreService.streamUnlockedCapsules();
+  }
+
+  Future<void> migrateUnlockedCapsules(List<TimeCapsule> capsules) async {
+    final now = DateTime.now();
+    for (var capsule in capsules) {
+      if (capsule.unlockDate.isBefore(now)) {
+        await _firestoreService.migrateToMemory(capsule);
+      }
+    }
+  }
+
+
+
+
+
+
+
+  
 
   // Future<List<String>> changePrivacy(){
   //   return _firestoreService.handlePrivacy(privacy: privacy);

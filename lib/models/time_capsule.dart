@@ -37,7 +37,9 @@ class TimeCapsule {
       description: json['description'] ?? '',
       unlockDate: (json['unlockDate'] as Timestamp).toDate(),
       privacy: json['privacy'] ?? 'Private',
-      createdAt: (json['createdAt'] as Timestamp).toDate(),
+      createdAt: (json['createdAt'] != null)
+          ? (json['createdAt'] as Timestamp).toDate()
+          : DateTime.now(), // fallback to current time
       photoUrls: List<String>.from(json['photoUrls'] ?? []),
       videoUrls: List<String>.from(json['videoUrls'] ?? []),
       audioUrls: List<String>.from(json['audioUrls'] ?? []),

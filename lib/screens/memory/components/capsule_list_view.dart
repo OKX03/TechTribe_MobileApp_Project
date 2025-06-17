@@ -23,12 +23,17 @@ class _CapsuleListViewState extends State<CapsuleListView> {
     super.initState();
     final userId = FirebaseAuth.instance.currentUser!.uid;
     _repository = CapsuleRepository(CapsuleFirestoreService(userId));
+
+    // Auto-migrate unlocked capsules
+    _repository.fetchAllCapsules().then((capsules) {
+      _repository.migrateUnlockedCapsules(capsules);
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<List<TimeCapsule>>(
-      stream: _repository.streamCapsules(),
+      stream: _repository.streamLockedCapsules(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -56,16 +61,12 @@ class _CapsuleListViewState extends State<CapsuleListView> {
           final isUnlocked = daysLeft<=0;
 
           return GestureDetector(
-            onTap: isUnlocked
-                ? () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => CapsuleDetailPage(capsule: capsule),
-                      ),
-                    );
-                  }
-                : null, 
+            onTap: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('This capsule is still locked.')),
+              );
+            },
+
             child: CapsuleCard(
               title: capsule.title,
               unlockDate: _formatDate(capsule.unlockDate),

@@ -28,6 +28,7 @@ class HomePage extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xFFF6F8FC),
       appBar: AppBar(
+        automaticallyImplyLeading: false,  // Add this line to remove back arrow
         elevation: 0,
         flexibleSpace: Container(
           decoration: const BoxDecoration(
