@@ -46,4 +46,8 @@ class MemoryService {
   Future<DocumentSnapshot> getUserProfile(String userId) {
     return _repo.getUserById(userId);
   }
+
+  Future<void> deleteMemory(String memoryId) {
+    return _repo.deleteMemory(memoryId);
+  }
 }

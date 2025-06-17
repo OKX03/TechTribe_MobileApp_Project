@@ -33,6 +33,7 @@ dependencies:
   video_player: ^2.10.0
   just_audio: ^0.10.4
   url_launcher: ^6.3.1
+  rxdart: ^0.28.0
 
 dev_dependencies:
   flutter_test:

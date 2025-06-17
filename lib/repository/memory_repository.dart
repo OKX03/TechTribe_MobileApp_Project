@@ -60,4 +60,8 @@ class MemoryRepository {
         .orderBy('createdAt', descending: true)
         .snapshots();
   }
+
+  Future<void> deleteMemory(String memoryId) async {
+    await memories.doc(memoryId).delete();
+  }
 }

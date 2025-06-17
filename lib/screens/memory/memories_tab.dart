@@ -1,130 +1,9 @@
-// import 'package:flutter/material.dart';
-// import 'package:cloud_firestore/cloud_firestore.dart';
-// import 'package:firebase_auth/firebase_auth.dart';
-// import 'package:intl/intl.dart';
-
-// import 'memory_details_page.dart';
-
-// class MemoriesTab extends StatelessWidget {
-//   const MemoriesTab({super.key});
-
-//   @override
-//   Widget build(BuildContext context) {
-//     final userId = FirebaseAuth.instance.currentUser?.uid;
-
-//     if (userId == null) {
-//       return const Center(child: Text('You must be logged in to view memories.'));
-//     }
-
-//     return Scaffold(
-//       body: StreamBuilder<QuerySnapshot>(
-//         stream: FirebaseFirestore.instance
-//             .collection('memories')
-//             .where('ownerId', isEqualTo: userId)
-//             .orderBy('unlockedAt', descending: true)
-//             .snapshots(),
-//         builder: (context, snapshot) {
-//           if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
-//           final memories = snapshot.data!.docs;
-
-//           if (memories.isEmpty) {
-//             return const Center(child: Text('No memories yet.'));
-//           }
-
-//           return ListView.builder(
-//             itemCount: memories.length,
-//             itemBuilder: (context, index) {
-//               final memory = memories[index].data() as Map<String, dynamic>;
-//               final docId = memories[index].id;
-
-//               final title = memory['title'] ?? 'Untitled';
-//               final description = memory['description'] ?? '';
-//               final unlockedAt = (memory['unlockedAt'] as Timestamp).toDate();
-//               final createdAt = (memory['createdAt'] as Timestamp).toDate();
-//               final headerImage = (memory['photoUrls'] as List).isNotEmpty
-//                   ? memory['photoUrls'][0]
-//                   : null;
-
-//               return GestureDetector(
-//                 onTap: () => Navigator.push(
-//                   context,
-//                   MaterialPageRoute(
-//                     builder: (_) => MemoryDetailPage(
-//                       memoryId: docId,
-//                       memoryData: memory,
-//                     ),
-//                   ),
-//                 ),
-//                 child: Card(
-//                   margin: const EdgeInsets.all(10),
-//                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-//                   elevation: 4,
-//                   child: Column(
-//                     crossAxisAlignment: CrossAxisAlignment.start,
-//                     children: [
-//                         if (headerImage != null)
-//                           ClipRRect(
-//                             borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-//                             child: Image.network(
-//                               headerImage,
-//                               height: 180,
-//                               width: double.infinity,
-//                               fit: BoxFit.cover,
-//                             ),
-//                           )
-//                         else
-//                           ClipRRect(
-//                             borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-//                             child: Image.asset(
-//                               "assets/images/default_image.png",
-//                               height: 180,
-//                               width: double.infinity,
-//                               fit: BoxFit.cover,
-//                                alignment: Alignment.center,
-//                             ),
-//                           ),
-//                       Padding(
-//                         padding: const EdgeInsets.all(12),
-//                         child: Column(
-//                           crossAxisAlignment: CrossAxisAlignment.start,
-//                           children: [
-//                             Text(title,
-//                                 style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.blue)),
-//                             const SizedBox(height: 6),
-//                             Text(description, maxLines: 2, overflow: TextOverflow.ellipsis),
-//                             const SizedBox(height: 8),
-//                             Row(
-//                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-//                               children: [
-//                                 Text(
-//                                   "Created: ${DateFormat('dd/MM/yyyy').format(createdAt)}",
-//                                   style: TextStyle(fontSize: 12, color: Colors.blue.shade300),
-//                                 ),
-//                                 Text(
-//                                   "Unlocked: ${DateFormat('dd/MM/yyyy').format(unlockedAt)}",
-//                                   style: TextStyle(fontSize: 12, color: Colors.blue.shade300),
-//                                 ),
-//                               ],
-//                             ),
-//                           ],
-//                         ),
-//                       ),
-//                     ],
-//                   ),
-//                 ),
-//               );
-//             },
-//           );
-//         },
-//       ),
-//     );
-//   }
-// }
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 
+import '../../../app.dart';
 import '../../services/memory_service.dart';
 import 'memory_details_page.dart';
 
@@ -167,7 +46,60 @@ class _MemoriesTabState extends State<MemoriesTab> {
     });
   }
 
+  void showSuccessMessage(String message) {
+    final context = navigatorKey.currentContext;
+    if (context != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message), backgroundColor: Colors.green),
+      );
+    }
+  }
+
+
+  void showErrorMessage(String message) {
+    final context = navigatorKey.currentContext;
+    if (context != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message), backgroundColor: Colors.red),
+      );
+    }
+  }
+
+  
+
   final memoryService = MemoryService();
+
+  void _confirmDelete(BuildContext context, MemoryService service, String memoryId) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text("Confirm Deletion"),
+        content: const Text("Are you sure you want to delete this memory?"),
+        actions: [
+          TextButton(
+            child: const Text("Cancel"),
+            onPressed: () => Navigator.pop(dialogContext),
+          ),
+          TextButton(
+            child: const Text("Delete", style: TextStyle(color: Colors.red)),
+            onPressed: () async {
+              try {
+                await memoryService.deleteMemory(memoryId);
+                if (!context.mounted) return;
+                Navigator.pop(dialogContext);
+                showSuccessMessage("Memory deleted successfully!");
+              } catch (e) {
+                if (!context.mounted) return;
+                Navigator.pop(dialogContext);
+                showErrorMessage("Failed to delete memory.");
+              }
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -178,9 +110,10 @@ class _MemoriesTabState extends State<MemoriesTab> {
     }
 
     return Scaffold(
+      backgroundColor: Colors.white,
       body: Column(
         children: [
-          // 🔍 Search Bar
+          // Search Bar
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             child: TextField(
@@ -258,6 +191,21 @@ class _MemoriesTabState extends State<MemoriesTab> {
               builder: (context, snapshot) {
                 if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
                 var memories = snapshot.data!.docs;
+               
+                final docs = snapshot.data!.docs;
+
+                if (docs.isEmpty) {
+                  return const Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.inbox, size: 64, color: Colors.grey),
+                        SizedBox(height: 12),
+                        Text("No memories yet.", style: TextStyle(fontSize: 16, color: Colors.grey)),
+                      ],
+                    ),
+                  );
+                }
 
                 // 🔍 Filter by title
                 memories = memories.where((doc) {
@@ -308,7 +256,11 @@ class _MemoriesTabState extends State<MemoriesTab> {
                           ),
                         ),
                       ),
+                      onLongPress: () {
+                        _confirmDelete(context, memoryService, docId);
+                      },
                       child: Card(
+                        color: Colors.white,
                         margin: const EdgeInsets.all(10),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         elevation: 4,
@@ -345,7 +297,7 @@ class _MemoriesTabState extends State<MemoriesTab> {
                                       style: const TextStyle(
                                           fontSize: 18,
                                           fontWeight: FontWeight.bold,
-                                          color: Colors.blue)),
+                                          color: Color.fromARGB(255, 0, 0, 0))),
                                   const SizedBox(height: 6),
                                   Text(description, maxLines: 2, overflow: TextOverflow.ellipsis),
                                   const SizedBox(height: 8),
