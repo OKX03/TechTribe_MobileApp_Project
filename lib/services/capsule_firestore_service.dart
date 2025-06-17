@@ -56,6 +56,53 @@ class CapsuleFirestoreService {
         }).toList());
   }
 
+  Stream<List<TimeCapsule>> streamLockedCapsules() {
+    print("Fetching locked capsules for: $_userId");
+    return _db
+        .collection('capsules')
+        .where('ownerId', isEqualTo: _userId)
+        .where('unlockDate', isGreaterThan: Timestamp.now()) // 🔒 only locked
+        .orderBy('unlockDate')
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+            .map((doc) => TimeCapsule.fromJson(doc.data(), doc.id))
+            .toList());
+  }
+
+  Stream<List<TimeCapsule>> streamUnlockedCapsules() {
+  return _db
+      .collection('capsules')
+      .where('ownerId', isEqualTo: _userId)
+      .where('unlockDate', isLessThanOrEqualTo: Timestamp.now())
+      .orderBy('unlockDate', descending: true)
+      .snapshots()
+      .map((snapshot) => snapshot.docs
+          .map((doc) => TimeCapsule.fromJson(doc.data(), doc.id))
+          .toList());
+}
+
+Future<void> migrateToMemory(TimeCapsule capsule) async {
+  final now = DateTime.now();
+  if (capsule.unlockDate.isAfter(now)) {
+    // Safety: do not migrate locked capsules
+    print("Skipping locked capsule: ${capsule.title}");
+    return;
+  }
+
+  final memoryData = capsule.toJson();
+  memoryData['unlockedAt'] = Timestamp.fromDate(now);
+  memoryData['ownerId'] = _userId;
+
+  await _db.collection('memories').doc(capsule.id).set(memoryData);
+  await _db.collection('capsules').doc(capsule.id).delete(); // only delete if safe
+}
+
+
+
+
+
+  
+
   // Future<List<String>> handlePrivacy({
   //     required String privacy,
   //     List<String> selectedFriendIds = const [],

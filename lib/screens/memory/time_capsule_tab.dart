@@ -1,4 +1,6 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:memorime_v1/models/time_capsule.dart';
 import 'components/capsule_list_view.dart';
 import 'components/capsule_grid_view.dart';
@@ -12,10 +14,12 @@ class TimeCapsuleTab extends StatefulWidget {
 
 class _TimeCapsuleTabState extends State<TimeCapsuleTab> {
   bool isListView = true; // Default to list view
-  final List<TimeCapsule> myCapsuleList = []; // Add your capsule data here
+  //final List<TimeCapsule> myCapsuleList = []; // Add your capsule data here
 
   @override
   Widget build(BuildContext context) {
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+
     return Scaffold(
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -80,13 +84,32 @@ class _TimeCapsuleTabState extends State<TimeCapsuleTab> {
 
           // Capsule List/Grid
           Expanded(
-            child: isListView
-                ? CapsuleListView()
-                : CapsuleGridView(
-                  capsules: myCapsuleList,
-                  month: DateTime.now(),
-                ),
+            child: StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('capsules')
+                  .where('ownerId', isEqualTo: FirebaseAuth.instance.currentUser?.uid)
+                  .where('unlockDate', isGreaterThan: Timestamp.now()) // only locked
+                  .snapshots(),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                final docs = snapshot.data!.docs;
+                final List<TimeCapsule> lockedCapsules = docs.map((doc) =>
+                  TimeCapsule.fromJson(doc.data() as Map<String, dynamic>, doc.id)).toList();
+
+                if (lockedCapsules.isEmpty) {
+                  return const Center(child: Text('No locked capsules available.'));
+                }
+
+                return isListView
+                    ? CapsuleListView()
+                    : CapsuleGridView(capsules: lockedCapsules, month: DateTime.now());
+              },
+            ),
           ),
+
         ],
       ),
     );

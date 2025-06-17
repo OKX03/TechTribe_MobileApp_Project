@@ -38,6 +38,8 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^5.0.0
+  timeline_list: ^0.0.2
+  timeline_tile: ^2.0.0
 
 flutter:
   uses-material-design: true
