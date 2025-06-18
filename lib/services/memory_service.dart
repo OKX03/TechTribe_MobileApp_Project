@@ -50,4 +50,63 @@ class MemoryService {
   Future<void> deleteMemory(String memoryId) {
     return _repo.deleteMemory(memoryId);
   }
+
+  // New methods for branch functionality
+  Future<void> createBranch({
+    required String parentMemoryId,
+    required String title,
+    required String description,
+    required String ownerId,
+    required List<String> photoUrls,
+    required List<String> videoUrls,
+    required List<String> audioUrls,
+    required List<String> fileUrls,
+    required String privacy,
+  }) async {
+    final parentMemory = await getMemory(parentMemoryId);
+    final parentData = parentMemory.data() as Map<String, dynamic>;
+    final parentBranchLevel = parentData['branchLevel'] ?? 0;
+
+    final memoryData = {
+      'title': title,
+      'description': description,
+      'unlockedAt': Timestamp.now(),
+      'unlockDate': Timestamp.now(),
+      'privacy': privacy,
+      'createdAt': Timestamp.now(),
+      'ownerId': ownerId,
+      'visibleTo': [],
+      'photoUrls': photoUrls,
+      'videoUrls': videoUrls,
+      'audioUrls': audioUrls,
+      'fileUrls': fileUrls,
+      'likedBy': [],
+      'isBranch': true,
+      'branchLevel': parentBranchLevel + 1,
+      'parentMemoryId': parentMemoryId,
+    };
+
+    await _repo.memories.add(memoryData);
+  }
+
+  Stream<QuerySnapshot> getBranchMemories(String parentMemoryId) {
+    return _repo.memories
+        .where('parentMemoryId', isEqualTo: parentMemoryId)
+        .orderBy('createdAt', descending: true)
+        .snapshots();
+  }
+
+  Future<void> deleteBranch(String memoryId) async {
+    // First, get all child branches
+    final branches =
+        await _repo.memories.where('parentMemoryId', isEqualTo: memoryId).get();
+
+    // Delete all child branches recursively
+    for (var branch in branches.docs) {
+      await deleteBranch(branch.id);
+    }
+
+    // Finally, delete the current branch
+    await deleteMemory(memoryId);
+  }
 }
