@@ -56,46 +56,84 @@ class CapsuleFirestoreService {
         }).toList());
   }
 
-  Stream<List<TimeCapsule>> streamLockedCapsules() {
-    print("Fetching locked capsules for: $_userId");
-    return _db
-        .collection('capsules')
-        .where('ownerId', isEqualTo: _userId)
-        .where('unlockDate', isGreaterThan: Timestamp.now()) // 🔒 only locked
-        .orderBy('unlockDate')
-        .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => TimeCapsule.fromJson(doc.data(), doc.id))
-            .toList());
+Future<void> migrateToMemory(TimeCapsule capsule) async {
+  final now = DateTime.now();
+  
+  // Debug print statements to help diagnose the issue
+  print('Current time: $now');
+  print('Capsule unlock date: ${capsule.unlockDate}');
+
+  // Check if capsule can be unlocked based on current time
+  if (capsule.unlockDate.isAfter(now)) {
+    print("Capsule not ready to unlock: ${capsule.title}");
+    print("Time remaining: ${capsule.unlockDate.difference(now)}");
+    return;
   }
 
-  Stream<List<TimeCapsule>> streamUnlockedCapsules() {
+  try {
+    // Create memory document first
+    final memoryData = capsule.toJson();
+    memoryData['unlockedAt'] = Timestamp.fromDate(now);
+    memoryData['createdAt'] = capsule.createdAt ?? Timestamp.fromDate(now);
+    memoryData['ownerId'] = _userId;
+
+    // Use a batch to ensure atomicity
+    final batch = _db.batch();
+    
+    // Add memory document
+    final memoryRef = _db.collection('memories').doc(capsule.id);
+    batch.set(memoryRef, memoryData);
+    
+    // Delete capsule document
+    final capsuleRef = _db.collection('capsules').doc(capsule.id);
+    batch.delete(capsuleRef);
+
+    // Commit the batch
+    await batch.commit();
+    
+    print("Successfully migrated capsule to memory: ${capsule.title}");
+  } catch (e) {
+    print('Error migrating capsule to memory: $e');
+    throw e;
+  }
+}
+
+Stream<List<TimeCapsule>> streamLockedCapsules() {
+  final now = Timestamp.fromDate(DateTime.now());
   return _db
       .collection('capsules')
       .where('ownerId', isEqualTo: _userId)
-      .where('unlockDate', isLessThanOrEqualTo: Timestamp.now())
-      .orderBy('unlockDate', descending: true)
+      .where('unlockDate', isGreaterThan: now)
+      .orderBy('unlockDate')
       .snapshots()
       .map((snapshot) => snapshot.docs
           .map((doc) => TimeCapsule.fromJson(doc.data(), doc.id))
           .toList());
 }
 
-Future<void> migrateToMemory(TimeCapsule capsule) async {
-  final now = DateTime.now();
-  if (capsule.unlockDate.isAfter(now)) {
-    // Safety: do not migrate locked capsules
-    print("Skipping locked capsule: ${capsule.title}");
-    return;
-  }
+Stream<List<TimeCapsule>> streamUnlockedCapsules() {
+  return _db
+      .collection('capsules')
+      .where('ownerId', isEqualTo: _userId)
+      .orderBy('unlockDate')
+      .snapshots()
+      .map((snapshot) {
+        final now = DateTime.now();
+        final unlockedCapsules = <TimeCapsule>[];
 
-  final memoryData = capsule.toJson();
-  memoryData['unlockedAt'] = Timestamp.fromDate(now);
-  memoryData['ownerId'] = _userId;
+        for (final doc in snapshot.docs) {
+          final capsule = TimeCapsule.fromJson(doc.data(), doc.id);
+          if (capsule.unlockDate.isBefore(now) || capsule.unlockDate.isAtSameMomentAs(now)) {
+            migrateToMemory(capsule);
+            unlockedCapsules.add(capsule);
+          }
+        }
 
-  await _db.collection('memories').doc(capsule.id).set(memoryData);
-  await _db.collection('capsules').doc(capsule.id).delete(); // only delete if safe
+        return unlockedCapsules;
+      });
 }
+
+
 
 
 
