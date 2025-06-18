@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import '../group/group_page.dart';
+import '../../services/friend_service.dart';
 
 class FriendsMainPage extends StatefulWidget {
   const FriendsMainPage({super.key});
@@ -16,9 +17,9 @@ class _FriendsMainPageState extends State<FriendsMainPage>
   final _searchController = TextEditingController();
   String _searchQuery = "";
   late TabController _tabController;
+  final _friendService = FriendService();
 
-  final _firestore = FirebaseFirestore.instance;
-  User? get _me => FirebaseAuth.instance.currentUser;
+  User? get _me => _friendService.currentUser;
 
   @override
   void initState() {
@@ -38,294 +39,59 @@ class _FriendsMainPageState extends State<FriendsMainPage>
 
   // ─── Fetch pending requests (where friendId == me) ───────────────
   Future<List<Map<String, String>>> fetchFriendRequests() async {
-    final me = _me;
-    if (me == null) return [];
-
-    // 1️⃣ Find all docs where someone requested me
-    final qs =
-        await _firestore
-            .collection('friendList')
-            .where('friendId', isEqualTo: me.uid)
-            .where('status', isEqualTo: 'pending')
-            .get();
-
-    final ownerIds = qs.docs.map((d) => d['ownerId'] as String).toList();
-    if (ownerIds.isEmpty) return [];
-
-    // 2️⃣ Fetch their profiles in one batch
-    final users =
-        await _firestore
-            .collection('users')
-            .where(FieldPath.documentId, whereIn: ownerIds)
-            .get();
-
-    // 3️⃣ Map to the same shape your UI expects
-    return users.docs.map((u) {
-      final d = u.data();
-      return {
-        'uid': u.id,
-        'username': d['username'] as String? ?? 'No Name',
-        'profile_picture':
-            d['profile_picture'] as String? ??
-            'https://via.placeholder.com/150',
-      };
-    }).toList();
+    return _friendService.fetchFriendRequests();
   }
 
   // ─── Fetch accepted friends (where ownerId == me) ────────────────
   Future<List<Map<String, dynamic>>> fetchFriendList() async {
-    final me = _me;
-    if (me == null) return [];
-
-    // 1. Get all friendships where I am owner or friend, and status is accepted
-    final asOwner =
-        await _firestore
-            .collection('friendList')
-            .where('ownerId', isEqualTo: me.uid)
-            .where('status', isEqualTo: 'accepted')
-            .get();
-
-    final asFriend =
-        await _firestore
-            .collection('friendList')
-            .where('friendId', isEqualTo: me.uid)
-            .where('status', isEqualTo: 'accepted')
-            .get();
-
-    // 2. Collect all friend UIDs and since dates
-    final friendData = <String, Timestamp>{};
-    for (var d in asOwner.docs) {
-      friendData[d['friendId'] as String] = d['since'] as Timestamp;
-    }
-    for (var d in asFriend.docs) {
-      friendData[d['ownerId'] as String] = d['since'] as Timestamp;
-    }
-
-    if (friendData.isEmpty) return [];
-
-    // 3. Fetch user profiles for all friend UIDs
-    final users =
-        await _firestore
-            .collection('users')
-            .where(FieldPath.documentId, whereIn: friendData.keys.toList())
-            .get();
-
-    return users.docs.map((u) {
-      final d = u.data();
-      return {
-        'uid': u.id,
-        'username': d['username'] as String? ?? 'No Name',
-        'profile_picture':
-            d['profile_picture'] as String? ??
-            'https://via.placeholder.com/150',
-        'since': friendData[u.id],
-      };
-    }).toList();
+    return _friendService.fetchFriendList();
   }
 
   // ─── Fetch "recommended" (everyone except me & anyone I've already touched) ───
   Future<List<Map<String, dynamic>>> fetchRecommendedFriends() async {
-    final me = _me;
-    if (me == null) return [];
-
-    // Get all accepted friends (both directions)
-    final myFriendsSnap1 =
-        await _firestore
-            .collection('friendList')
-            .where('ownerId', isEqualTo: me.uid)
-            .where('status', isEqualTo: 'accepted')
-            .get();
-    final myFriendsSnap2 =
-        await _firestore
-            .collection('friendList')
-            .where('friendId', isEqualTo: me.uid)
-            .where('status', isEqualTo: 'accepted')
-            .get();
-
-    final myFriendIds = <String>{};
-    for (var d in myFriendsSnap1.docs) {
-      myFriendIds.add(d['friendId'] as String);
-    }
-    for (var d in myFriendsSnap2.docs) {
-      myFriendIds.add(d['ownerId'] as String);
-    }
-
-    // Get all users except me and my friends
-    final excluded = <String>{me.uid, ...myFriendIds};
-    final allUsersSnap = await _firestore.collection('users').get();
-
-    // Get all pending requests sent by me
-    final myPendingSnap =
-        await _firestore
-            .collection('friendList')
-            .where('ownerId', isEqualTo: me.uid)
-            .where('status', isEqualTo: 'pending')
-            .get();
-    final myPendingIds =
-        myPendingSnap.docs.map((d) => d['friendId'] as String).toSet();
-
-    // For each candidate, count mutual friends
-    List<Map<String, dynamic>> candidates = [];
-    for (var userDoc in allUsersSnap.docs) {
-      final userId = userDoc.id;
-      if (excluded.contains(userId)) continue;
-
-      // Get their friends (both directions)
-      final theirFriendsSnap1 =
-          await _firestore
-              .collection('friendList')
-              .where('ownerId', isEqualTo: userId)
-              .where('status', isEqualTo: 'accepted')
-              .get();
-      final theirFriendsSnap2 =
-          await _firestore
-              .collection('friendList')
-              .where('friendId', isEqualTo: userId)
-              .where('status', isEqualTo: 'accepted')
-              .get();
-
-      final theirFriendIds = <String>{};
-      for (var d in theirFriendsSnap1.docs) {
-        theirFriendIds.add(d['friendId'] as String);
-      }
-      for (var d in theirFriendsSnap2.docs) {
-        theirFriendIds.add(d['ownerId'] as String);
-      }
-
-      // Count mutual friends
-      final mutualFriends = myFriendIds.intersection(theirFriendIds).length;
-
-      final d = userDoc.data();
-      candidates.add({
-        'uid': userId,
-        'username': d['username'] as String? ?? 'No Name',
-        'profile_picture':
-            d['profile_picture'] as String? ??
-            'https://via.placeholder.com/150',
-        'mutualFriends': mutualFriends,
-        'createdAt': d['createdAt'],
-        'isPending': myPendingIds.contains(userId),
-      });
-    }
-
-    // Sort by mutual friends descending
-    candidates.sort((a, b) => b['mutualFriends'].compareTo(a['mutualFriends']));
-
-    return candidates;
+    return _friendService.fetchRecommendedFriends();
   }
 
   // ─── US014-01: Send Friend Request ────────────────────────────────
   Future<void> sendFriendRequest(String toUserId) async {
-    final me = _me;
-    if (me == null) return;
-
-    await _firestore.collection('friendList').add({
-      'ownerId': me.uid,
-      'friendId': toUserId,
-      'status': 'pending',
-      'since': FieldValue.serverTimestamp(),
-    });
-
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Friend request sent!')));
+    await _friendService.sendFriendRequest(toUserId);
+    if (mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Friend request sent!')));
+    }
   }
 
   // ─── US014-04: Accept Friend Request ──────────────────────────────
   Future<void> acceptFriendRequest(String fromUid) async {
-    final me = _me;
-    if (me == null) return;
-
-    // 1️⃣ Find the pending doc I received
-    final q =
-        await _firestore
-            .collection('friendList')
-            .where('ownerId', isEqualTo: fromUid)
-            .where('friendId', isEqualTo: me.uid)
-            .where('status', isEqualTo: 'pending')
-            .limit(1)
-            .get();
-    if (q.docs.isEmpty) return;
-    final doc = q.docs.first.reference;
-
-    final now = FieldValue.serverTimestamp();
-    final batch = _firestore.batch();
-
-    // 2️⃣ Upgrade their doc to accepted
-    batch.update(doc, {'status': 'accepted', 'since': now});
-
-    // 3️⃣ Create my reciprocal "accepted" entry
-    batch.set(_firestore.collection('friendList').doc(), {
-      'ownerId': me.uid,
-      'friendId': fromUid,
-      'status': 'accepted',
-      'since': now,
-    });
-
-    await batch.commit();
+    await _friendService.acceptFriendRequest(fromUid);
     if (mounted) {
       setState(() {});
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Friend request accepted!')));
     }
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Friend request accepted!')));
   }
 
   // ─── US014-04B: Reject Friend Request ─────────────────────────────
   Future<void> rejectFriendRequest(String fromUid) async {
-    final me = _me;
-    if (me == null) return;
-
-    final q =
-        await _firestore
-            .collection('friendList')
-            .where('ownerId', isEqualTo: fromUid)
-            .where('friendId', isEqualTo: me.uid)
-            .where('status', isEqualTo: 'pending')
-            .get();
-    for (var d in q.docs) {
-      await d.reference.delete();
-    }
-
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Friend request rejected.')));
+    await _friendService.rejectFriendRequest(fromUid);
     if (mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Friend request rejected.')));
       setState(() {});
     }
   }
 
   // ─── US014-03: Delete Friend (Unfriend) ───────────────────────────
   Future<void> deleteFriend(String friendUid) async {
-    final me = _me;
-    if (me == null) return;
-
-    final batch = _firestore.batch();
-
-    // remove my "accepted" doc
-    final mine =
-        await _firestore
-            .collection('friendList')
-            .where('ownerId', isEqualTo: me.uid)
-            .where('friendId', isEqualTo: friendUid)
-            .where('status', isEqualTo: 'accepted')
-            .get();
-    mine.docs.forEach((d) => batch.delete(d.reference));
-
-    // remove theirs
-    final theirs =
-        await _firestore
-            .collection('friendList')
-            .where('ownerId', isEqualTo: friendUid)
-            .where('friendId', isEqualTo: me.uid)
-            .where('status', isEqualTo: 'accepted')
-            .get();
-    theirs.docs.forEach((d) => batch.delete(d.reference));
-
-    await batch.commit();
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Friend removed successfully.')),
-    );
+    await _friendService.deleteFriend(friendUid);
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Friend removed successfully.')),
+      );
+    }
   }
 
   @override
@@ -376,7 +142,7 @@ class _FriendsMainPageState extends State<FriendsMainPage>
               showSearch(
                 context: context,
                 delegate: FriendSearchDelegate(
-                  firestore: _firestore,
+                  firestore: FirebaseFirestore.instance,
                   currentUser: _me,
                 ),
               );
@@ -775,7 +541,7 @@ class _FriendsMainPageState extends State<FriendsMainPage>
         // 2. Get my pending sent requests
         return FutureBuilder<QuerySnapshot>(
           future:
-              _firestore
+              FirebaseFirestore.instance
                   .collection('friendList')
                   .where('ownerId', isEqualTo: me.uid)
                   .where('status', isEqualTo: 'pending')
@@ -799,7 +565,7 @@ class _FriendsMainPageState extends State<FriendsMainPage>
                 filteredRequests.map((d) => d['friendId'] as String).toList();
             return FutureBuilder<QuerySnapshot>(
               future:
-                  _firestore
+                  FirebaseFirestore.instance
                       .collection('users')
                       .where(FieldPath.documentId, whereIn: friendIds)
                       .get(),
