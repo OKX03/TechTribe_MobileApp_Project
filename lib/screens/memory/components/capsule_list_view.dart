@@ -3,37 +3,35 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../models/time_capsule.dart';
 import '../../../repository/capsule_repository.dart';
-import '../../../services/capsule_firestore_service.dart';
+import '../../../services/capsule_service.dart';
 import '../capsule_detailsPage.dart.dart';
 import '../../../app.dart';
 import '../../capsule/select_friend.dart';
 
 class CapsuleListView extends StatefulWidget {
-  const CapsuleListView({super.key});
+  final CapsuleService capsuleService;
+
+  const CapsuleListView({super.key, required this.capsuleService});
 
   @override
   State<CapsuleListView> createState() => _CapsuleListViewState();
 }
 
 class _CapsuleListViewState extends State<CapsuleListView> {
-  late final CapsuleRepository _repository;
 
   @override
   void initState() {
     super.initState();
-    final userId = FirebaseAuth.instance.currentUser!.uid;
-    _repository = CapsuleRepository(CapsuleFirestoreService(userId));
-
-    // Auto-migrate unlocked capsules
-    _repository.fetchAllCapsules().then((capsules) {
-      _repository.migrateUnlockedCapsules(capsules);
+    // final userId = FirebaseAuth.instance.currentUser!.uid;
+    widget.capsuleService.fetchAllCapsules().then((capsules) {
+      widget.capsuleService.migrateUnlockedCapsules(capsules);
     });
   }
 
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<List<TimeCapsule>>(
-      stream: _repository.streamLockedCapsules(),
+       stream: widget.capsuleService.streamLockedCapsules(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -73,8 +71,9 @@ class _CapsuleListViewState extends State<CapsuleListView> {
               daysLeft: daysLeft.toString(),
               createdDate: _formatDate(capsule.createdAt),
               isUnlocked: isUnlocked,
-              onEdit: () => _showEditDialog(context, _repository, capsule),
-              onDelete: () => _confirmDelete(context, _repository, capsule.id),
+              onEdit: () => _showEditDialog(context, widget.capsuleService, capsule),
+              onDelete: () => _confirmDelete(context, widget.capsuleService, capsule.id),
+
             ),
           );
         },
@@ -83,26 +82,26 @@ class _CapsuleListViewState extends State<CapsuleListView> {
   );
 }
 
-  void showSuccessMessage(String message) {
-    final context = navigatorKey.currentContext;
-    if (context != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message), backgroundColor: Colors.green),
-      );
-    }
-  }
+  // void showSuccessMessage(String message) {
+  //   final context = navigatorKey.currentContext;
+  //   if (context != null) {
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       SnackBar(content: Text(message), backgroundColor: Colors.green),
+  //     );
+  //   }
+  // }
 
-  void showErrorMessage(String message) {
-    final context = navigatorKey.currentContext;
-    if (context != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message), backgroundColor: Colors.red),
-      );
-    }
-  }
+  // void showErrorMessage(String message) {
+  //   final context = navigatorKey.currentContext;
+  //   if (context != null) {
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       SnackBar(content: Text(message), backgroundColor: Colors.red),
+  //     );
+  //   }
+  // }
 
 
-  void _confirmDelete(BuildContext context, CapsuleRepository repo, String capsuleId) {
+  void _confirmDelete(BuildContext context, CapsuleService service, String capsuleId) {
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -117,7 +116,7 @@ class _CapsuleListViewState extends State<CapsuleListView> {
             child: const Text("Delete", style: TextStyle(color: Colors.red)),
             onPressed: () async {
               try {
-                await repo.deleteCapsule(capsuleId);
+                await service.deleteCapsule(capsuleId);
                 if (!mounted) return;
                 Navigator.pop(dialogContext);
                 showSuccessMessage( "Capsule deleted successfully!");
@@ -169,7 +168,7 @@ class _CapsuleListViewState extends State<CapsuleListView> {
     return [userId];
   }
 
-  void _showEditDialog(BuildContext context, CapsuleRepository repo, TimeCapsule capsule) {
+  void _showEditDialog(BuildContext context,  CapsuleService service, TimeCapsule capsule) {
     final privacyOptions = ["private", "public", "specific"];
     String selectedPrivacy = capsule.privacy.toLowerCase();
     DateTime selectedDate = capsule.unlockDate;
@@ -263,6 +262,7 @@ class _CapsuleListViewState extends State<CapsuleListView> {
               ),
             ],
           ),
+          
           actions: [
             TextButton(
               child: const Text("Cancel"),
@@ -272,7 +272,8 @@ class _CapsuleListViewState extends State<CapsuleListView> {
               child: const Text("Save"),
               onPressed: () async {
                 try {
-                  await repo.updateCapsule(
+                  print('Updating capsule: ${capsule.id}');
+                  await service.updateCapsule(
                     capsule.id,
                     privacy: selectedPrivacy,
                     unlockDate: selectedDate,

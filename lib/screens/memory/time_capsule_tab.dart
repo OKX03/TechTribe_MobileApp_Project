@@ -2,9 +2,11 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:memorime_v1/models/time_capsule.dart';
-import 'package:memorime_v1/services/capsule_firestore_service.dart';
+
 import 'components/capsule_list_view.dart';
 import 'components/capsule_grid_view.dart';
+
+import '../../services/capsule_service.dart';
 
 class TimeCapsuleTab extends StatefulWidget {
   const TimeCapsuleTab({super.key});
@@ -15,16 +17,24 @@ class TimeCapsuleTab extends StatefulWidget {
 
 class _TimeCapsuleTabState extends State<TimeCapsuleTab> {
   bool isListView = true;
+  late String userId;
+  late CapsuleService capsuleService;
+
+  @override
+  void initState() {
+    super.initState();
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser != null) {
+      userId = currentUser.uid;
+      capsuleService = CapsuleService(userId);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final userId = FirebaseAuth.instance.currentUser?.uid;
-
-    if (userId == null) {
+    if (FirebaseAuth.instance.currentUser == null) {
       return const Center(child: Text('User not logged in'));
     }
-
-    final capsuleService = CapsuleFirestoreService(userId);
 
     return Scaffold(
       body: Column(
@@ -116,7 +126,7 @@ class _TimeCapsuleTabState extends State<TimeCapsuleTab> {
                 }
 
                 return isListView
-                    ? CapsuleListView()
+                    ? CapsuleListView(capsuleService: capsuleService)
                     : CapsuleGridView(capsules: lockedCapsules, month: DateTime.now());
               },
             ),

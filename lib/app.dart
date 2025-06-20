@@ -13,6 +13,23 @@ import 'package:flutter_quill/flutter_quill.dart' as quill;
 
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+void showSuccessMessage(String message) {
+    final context = navigatorKey.currentContext;
+    if (context != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message), backgroundColor: Colors.green),
+      );
+    }
+  }
+
+  void showErrorMessage(String message) {
+    final context = navigatorKey.currentContext;
+    if (context != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message), backgroundColor: Colors.red),
+      );
+    }
+  }
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});

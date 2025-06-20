@@ -1,303 +1,3 @@
-// import 'package:flutter/material.dart';
-// import 'package:flutter_quill/flutter_quill.dart' as quill;
-
-// import 'dart:io';
-// import 'package:intl/intl.dart';
-// import 'package:image_picker/image_picker.dart';
-// import 'package:file_picker/file_picker.dart';
-// import 'package:permission_handler/permission_handler.dart';
-
-// class CreateTimeCapsulePage extends StatefulWidget {
-//   const CreateTimeCapsulePage({super.key});
-
-//   @override
-//   State<CreateTimeCapsulePage> createState() => _CreateTimeCapsulePageState();
-// }
-
-// class _CreateTimeCapsulePageState extends State<CreateTimeCapsulePage> {
-//   final TextEditingController _titleController = TextEditingController();
-//   final quill.QuillController _quillController = quill.QuillController.basic();
-//   bool _showToolbar = true;
-
-//   DateTime? _selectedDate;
-//   String _privacy = 'Private';
-
-//   final ImagePicker _picker = ImagePicker();
-
-//   Future<void> insertImage() async {
-//     final status = await Permission.photos.request();
-//     final storageStatus = await Permission.storage.request();
-
-//     if (status.isGranted || storageStatus.isGranted) {
-//       final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
-//       if (image != null) {
-//         final imageUrl = image.path; // Use the local path
-//         final index = _quillController.selection.baseOffset;
-
-//         _quillController.replaceText(
-//           index,
-//           0,
-//           quill.BlockEmbed.image(imageUrl),
-//           TextSelection.collapsed(offset: index + 1),
-//         );
-//       }
-//     } else {
-//       debugPrint('Permission denied');
-//     }
-//   }
-
-//   Future<void> insertVideo() async {
-//     final XFile? video = await _picker.pickVideo(source: ImageSource.gallery);
-//     if (video != null) {
-//       final videoUri = File(video.path).uri.toString();
-//       final index = _quillController.selection.baseOffset;
-
-//       _quillController.replaceText(
-//         index,
-//         0,
-//         quill.BlockEmbed.video(videoUri),
-//         const TextSelection.collapsed(offset: 0),
-//       );
-//     }
-//   }
-
-//   Future<void> insertAudio() async {
-//     final result = await FilePicker.platform.pickFiles(type: FileType.audio);
-//     if (result != null && result.files.single.path != null) {
-//       final audioPath = result.files.single.path!;
-//       final index = _quillController.selection.baseOffset;
-
-//       _quillController.replaceText(
-//         index,
-//         0,
-//         '\nAudio: $audioPath\n',
-//         const TextSelection.collapsed(offset: 0),
-//       );
-//     }
-//   }
-
-//   Future<void> insertFile() async {
-//     final result = await FilePicker.platform.pickFiles();
-//     if (result != null && result.files.single.path != null) {
-//       final filePath = result.files.single.path!;
-//       final index = _quillController.selection.baseOffset;
-
-//       _quillController.replaceText(
-//         index,
-//         0,
-//         '\nFile: $filePath\n',
-//         const TextSelection.collapsed(offset: 0),
-//       );
-//     }
-//   }
-
-//   Future<void> _pickDate() async {
-//     final picked = await showDatePicker(
-//       context: context,
-//       initialDate: DateTime.now().add(const Duration(days: 1)),
-//       firstDate: DateTime.now(),
-//       lastDate: DateTime(2100),
-//     );
-//     if (picked != null) {
-//       setState(() {
-//         _selectedDate = picked;
-//       });
-//     }
-//   }
-
-//   Widget _buildPrivacyOption(String label) {
-//     final bool isSelected = _privacy == label;
-//     return Expanded(
-//       child: GestureDetector(
-//         onTap: () => setState(() => _privacy = label),
-//         child: Container(
-//           padding: const EdgeInsets.symmetric(vertical: 10),
-//           margin: const EdgeInsets.symmetric(horizontal: 4),
-//           decoration: BoxDecoration(
-//             color: isSelected ? Colors.deepPurple : Colors.transparent,
-//             borderRadius: BorderRadius.circular(10),
-//             border: Border.all(color: Colors.deepPurple),
-//           ),
-//           child: Center(
-//             child: Text(
-//               label,
-//               style: TextStyle(
-//                 color: isSelected ? Colors.white : Colors.deepPurple,
-//                 fontWeight: FontWeight.bold,
-//               ),
-//             ),
-//           ),
-//         ),
-//       ),
-//     );
-//   }
-
-//   void _handleFormSubmission() {
-//     final String title = _titleController.text;
-//     final String descriptionJson = _quillController.document.toDelta().toJson().toString();
-//     final String? unlockDate = _selectedDate != null ? DateFormat('yyyy-MM-dd').format(_selectedDate!) : null;
-
-//     // For demo: print to console (you can replace this with database save or API call)
-//     debugPrint('Title: $title');
-//     debugPrint('Description: $descriptionJson');
-//     debugPrint('Unlock Date: $unlockDate');
-//     debugPrint('Privacy: $_privacy');
-
-//     ScaffoldMessenger.of(context).showSnackBar(
-//       const SnackBar(content: Text('Capsule created successfully!')),
-//     );
-
-//     Navigator.pop(context); // or navigate to another page
-//   }
-
-//   @override
-//   void dispose() {
-//     _titleController.dispose();
-//     _quillController.dispose();
-//     super.dispose();
-//   }
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       appBar: AppBar(
-//         title: const Text('Create Capsule'),
-//         leading: IconButton(
-//           icon: const Icon(Icons.arrow_back),
-//           onPressed: () => Navigator.pop(context),
-//         ),
-//       ),
-//       body: Padding(
-//         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-//         child: ListView(
-//           children: [
-//             const Text('Capsule Title', style: TextStyle(fontWeight: FontWeight.bold)),
-//             const SizedBox(height: 6),
-//             TextField(
-//               controller: _titleController,
-//               decoration: const InputDecoration(
-//                 border: OutlineInputBorder(),
-//                 hintText: 'Enter capsule title',
-//               ),
-//             ),
-//             const SizedBox(height: 20),
-//             const Text('Description', style: TextStyle(fontWeight: FontWeight.bold)),
-//             const SizedBox(height: 6),
-//             Container(
-//               decoration: BoxDecoration(
-//                 border: Border.all(color: Colors.grey.shade400),
-//                 borderRadius: BorderRadius.circular(8),
-//               ),
-//               child: Column(
-//                 crossAxisAlignment: CrossAxisAlignment.start,
-//                 children: [
-//                   // Quill editor (input box) first
-//                   SizedBox(
-//                     height: 200,
-//                     child: quill.QuillEditor.basic(
-//                       controller: _quillController,
-//                     ),
-//                   ),
-
-//                   // Toolbar toggle button
-//                   Align(
-//                     alignment: Alignment.centerRight,
-//                     child: IconButton(
-//                       icon: Icon(
-//                         _showToolbar ? Icons.expand_less : Icons.expand_more,
-//                         color: Colors.grey,
-//                       ),
-//                       tooltip: _showToolbar ? 'Hide Toolbar' : 'Show Toolbar',
-//                       onPressed: () {
-//                         setState(() {
-//                           _showToolbar = !_showToolbar;
-//                         });
-//                       },
-//                     ),
-//                   ),
-
-//                   // Conditional toolbar
-//                   if (_showToolbar)
-//                     quill.QuillSimpleToolbar(controller: _quillController),
-
-//                   // Media buttons row
-//                   Row(
-//                     mainAxisAlignment: MainAxisAlignment.start,
-//                     children: [
-//                       IconButton(
-//                         icon: const Icon(Icons.image),
-//                         onPressed: insertImage,
-//                         tooltip: 'Insert Image',
-//                       ),
-//                       IconButton(
-//                         icon: const Icon(Icons.videocam),
-//                         onPressed: insertVideo,
-//                         tooltip: 'Insert Video',
-//                       ),
-//                       IconButton(
-//                         icon: const Icon(Icons.music_note),
-//                         onPressed: insertAudio,
-//                         tooltip: 'Insert Audio',
-//                       ),
-//                       IconButton(
-//                         icon: const Icon(Icons.attach_file),
-//                         onPressed: insertFile,
-//                         tooltip: 'Insert File',
-//                       ),
-//                     ],
-//                   ),
-//                 ],
-//               ),
-//             ),
-//             const SizedBox(height: 20),
-//             const Text('Date Unlock', style: TextStyle(fontWeight: FontWeight.bold)),
-//             const SizedBox(height: 6),
-//             GestureDetector(
-//               onTap: _pickDate,
-//               child: AbsorbPointer(
-//                 child: TextField(
-//                   decoration: InputDecoration(
-//                     hintText: _selectedDate != null
-//                         ? DateFormat('dd/MM/yyyy').format(_selectedDate!)
-//                         : 'DD/MM/YYYY',
-//                     suffixIcon: const Icon(Icons.calendar_today),
-//                     border: const OutlineInputBorder(),
-//                   ),
-//                 ),
-//               ),
-//             ),
-//             const SizedBox(height: 20),
-//             const Text('Privacy', style: TextStyle(fontWeight: FontWeight.bold)),
-//             const SizedBox(height: 8),
-//             Row(
-//               children: [
-//                 _buildPrivacyOption('Private'),
-//                 _buildPrivacyOption('Public'),
-//                 _buildPrivacyOption('Specific'),
-//               ],
-//             ),
-//             const SizedBox(height: 24),
-//             ElevatedButton(
-//               onPressed: _handleFormSubmission,
-//               style: ElevatedButton.styleFrom(
-//                 backgroundColor: Colors.deepPurple,
-//                 padding: const EdgeInsets.symmetric(vertical: 14),
-//                 shape: RoundedRectangleBorder(
-//                   borderRadius: BorderRadius.circular(10),
-//                 ),
-//               ),
-//               child: const Text(
-//                 'Next',
-//                 style: TextStyle(fontSize: 16, color: Colors.white),
-//               ),
-//             ),
-//           ],
-//         ),
-//       ),
-//     );
-//   }
-// }
-
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart' as quill;
 import 'package:image_picker/image_picker.dart';
@@ -307,10 +7,13 @@ import 'package:file_picker/file_picker.dart';
 import 'dart:io';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'testing_widget.dart';
+import '../../app.dart';
 import '../capsule/select_friend.dart';
-
+import '../../services/capsule_service.dart';
+import '../../models/time_capsule.dart';
 
 class CreateTimeCapsulePage extends StatefulWidget {
   const CreateTimeCapsulePage({super.key});
@@ -332,94 +35,144 @@ class _CreateTimeCapsulePageState extends State<CreateTimeCapsulePage> {
   final ImagePicker _picker = ImagePicker();
 
   final List<File> _photoFiles = [];
-  List<File> _videoFiles = [];
-  List<File> _audioFiles = [];
-  List<File> _otherFiles = [];
+  final List<File> _videoFiles = [];
+  final List<File> _audioFiles = [];
+  final List<File> _otherFiles = [];
+
+  bool _isPickingImage = false; 
+  bool _isPickingVideo = false; 
+  bool _isPickingAudio = false; 
+  bool _isPickingFile = false; 
 
   Future<void> _addPhoto() async {
-    final status = await Permission.photos.request();
-    final storageStatus = await Permission.storage.request();
+    if (_isPickingImage) return;
+    _isPickingImage = true;
 
-    if (status.isGranted || storageStatus.isGranted) {
-      final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
-      if (image != null) {
-        setState(() {
-          _photoFiles.add(File(image.path));
-        });
+    try {
+      final status = await Permission.photos.request();
+      final storageStatus = await Permission.storage.request();
+
+      if (status.isGranted || storageStatus.isGranted) {
+        final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
+        if (image != null) {
+          setState(() {
+            _photoFiles.add(File(image.path));
+          });
+        }
+      } else {
+        debugPrint('Permission denied');
+        showErrorMessage('Permission denied to access photos.');
       }
-    } else {
-      debugPrint('Permission denied');
+    } catch (e) {
+      debugPrint('Error picking photo: $e');
+      showErrorMessage('An error occurred while picking photo.');
+    } finally {
+      _isPickingImage = false;
     }
   }
 
   Future<void> _addVideo() async {
-    final status = await Permission.photos.request();
-    final storageStatus = await Permission.storage.request();
+    if (_isPickingVideo) return;
+    _isPickingVideo = true;
 
-    if (status.isGranted || storageStatus.isGranted) {
-      final XFile? video = await _picker.pickVideo(source: ImageSource.gallery);
-      if (video != null) {
-        setState(() {
-          _videoFiles.add(File(video.path));
-        });
+    try {
+      final status = await Permission.photos.request();
+      final storageStatus = await Permission.storage.request();
+
+      if (status.isGranted || storageStatus.isGranted) {
+        final XFile? video = await _picker.pickVideo(source: ImageSource.gallery);
+        if (video != null) {
+          setState(() {
+            _videoFiles.add(File(video.path));
+          });
+        }
+      } else {
+        debugPrint('Permission denied for video');
+        showErrorMessage('Permission denied to access videos.');
       }
-    } else {
-      debugPrint('Permission denied for video');
+    } catch (e) {
+      debugPrint('Error picking video: $e');
+      showErrorMessage('An error occurred while picking video.');
+    } finally {
+      _isPickingVideo = false;
     }
   }
 
   Future<void> _addAudio() async {
-    if (_isLoading) return;
+    if (_isPickingAudio || _isLoading) return;
+    _isPickingAudio = true;
     setState(() => _isLoading = true);
 
-    final granted = await Permission.storage.isGranted || await Permission.manageExternalStorage.isGranted;
-    if (!granted) {
+    try {
+      final granted = await Permission.storage.isGranted || await Permission.manageExternalStorage.isGranted;
+      if (!granted) {
+        final statuses = await [Permission.storage, Permission.manageExternalStorage].request();
+        if (!(statuses[Permission.storage]?.isGranted ?? false) &&
+            !(statuses[Permission.manageExternalStorage]?.isGranted ?? false)) {
+          debugPrint('Permission denied for audio');
+          showErrorMessage('Permission denied to access audio files.');
+          return;
+        }
+      }
+
+      final result = await FilePicker.platform.pickFiles(type: FileType.audio);
+      if (result != null && result.files.single.path != null) {
+        setState(() {
+          _audioFiles.add(File(result.files.single.path!));
+        });
+      }
+    } catch (e) {
+      debugPrint('Error picking audio: $e');
+      showErrorMessage('An error occurred while picking audio.');
+    } finally {
+      _isPickingAudio = false;
+      setState(() => _isLoading = false);
+    }
+  }
+
+
+  Future<void> _addFile() async {
+  if (_isPickingFile || _isLoading) return;
+  _isPickingFile = true;
+  setState(() => _isLoading = true);
+
+  try {
+    final hasPermission = await Permission.storage.isGranted || await Permission.manageExternalStorage.isGranted;
+
+    if (!hasPermission) {
       final statuses = await [Permission.storage, Permission.manageExternalStorage].request();
       if (!(statuses[Permission.storage]?.isGranted ?? false) &&
           !(statuses[Permission.manageExternalStorage]?.isGranted ?? false)) {
-        debugPrint('Permission denied for audio');
-        setState(() => _isLoading = false);
+        debugPrint('Permission denied for file');
+        showErrorMessage('Permission denied to access files.');
         return;
       }
     }
 
-    final result = await FilePicker.platform.pickFiles(type: FileType.audio);
-    if (result != null && result.files.single.path != null) {
-      setState(() {
-        _audioFiles.add(File(result.files.single.path!));
-      });
-    }
-
-    setState(() => _isLoading = false);
-  }
-
-  Future<void> _addFile() async {
-    if (_isLoading) return;
-    setState(() => _isLoading = true);
-
-    if (await Permission.storage.isGranted || await Permission.manageExternalStorage.isGranted) {
-      await _pickAnyFile();
-    } else {
-      final statuses = await [Permission.storage, Permission.manageExternalStorage].request();
-
-      if (statuses[Permission.storage]!.isGranted || statuses[Permission.manageExternalStorage]!.isGranted) {
-        await _pickAnyFile();
-      } else {
-        debugPrint('Permission denied for file');
-      }
-    }
-
-    setState(() => _isLoading = false);
-  }
-
-  Future<void> _pickAnyFile() async {
     final result = await FilePicker.platform.pickFiles(type: FileType.any);
     if (result != null && result.files.single.path != null) {
       setState(() {
         _otherFiles.add(File(result.files.single.path!));
       });
     }
+  } catch (e) {
+    debugPrint('Error picking file: $e');
+    showErrorMessage('An error occurred while picking file.');
+  } finally {
+    _isPickingFile = false;
+    setState(() => _isLoading = false);
   }
+}
+
+
+  // Future<void> _pickAnyFile() async {
+  //   final result = await FilePicker.platform.pickFiles(type: FileType.any);
+  //   if (result != null && result.files.single.path != null) {
+  //     setState(() {
+  //       _otherFiles.add(File(result.files.single.path!));
+  //     });
+  //   }
+  // }
 
   Future<void> _pickDate() async {
     final picked = await showDatePicker(
@@ -550,7 +303,7 @@ class _CreateTimeCapsulePageState extends State<CreateTimeCapsulePage> {
     );
   }
 
-  List<String> _privacyOptions = ['Private', 'Public', 'Specific'];
+  final List<String> _privacyOptions = ['Private', 'Public', 'Specific'];
   List<String> _selectedFriendIds = [];
 
   Widget _buildPrivacyToggle() {
@@ -621,20 +374,23 @@ class _CreateTimeCapsulePageState extends State<CreateTimeCapsulePage> {
   }
 
   void _handleFormSubmission() async {
+    final String userId = FirebaseAuth.instance.currentUser!.uid;
+    final CapsuleService capsuleService = CapsuleService(userId);
     final String title = _titleController.text.trim();
     final String description = _quillController.document.toPlainText().trim();
 
     if (title.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a title for your capsule.')),
-      );
+      showErrorMessage('Please enter a title for your capsule.');
+      return;
+    }
+
+    if (description.isEmpty) {
+      showErrorMessage('Please enter a description for your capsule.');
       return;
     }
 
     if (_selectedDate == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select an unlock date.')),
-      );
+      showErrorMessage('Please select an unlock date.');
       return;
     }
 
@@ -661,29 +417,42 @@ class _CreateTimeCapsulePageState extends State<CreateTimeCapsulePage> {
       // Check if any uploads failed (empty URL)
       final allUrls = [...photoUrls, ...videoUrls, ...audioUrls, ...fileUrls];
       if (allUrls.any((url) => url.isEmpty)) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('One or more files failed to upload. Please try again.')),
-        );
+        showErrorMessage('One or more files failed to upload. Please try again.');
         setState(() => _isLoading = false);
         return;
       }
 
-      final firestore = FirebaseFirestore.instance;
-      await FirebaseFirestore.instance.collection('capsules').doc().set({
-        'title': title,
-        'description': description,
-        'unlockDate': _selectedDate,
-        'privacy': _privacy.toLowerCase(), // private, public, specific
-        'visibleTo': await _computeVisibleToUids(_privacy),
-        'photoUrls': photoUrls,
-        'videoUrls': videoUrls,
-        'audioUrls': audioUrls,
-        'fileUrls': fileUrls,
-        'createdAt': FieldValue.serverTimestamp(),
-        'status': 'locked',
-        'ownerId': FirebaseAuth.instance.currentUser!.uid, // Ensure user is signed in
-      });
+      // final firestore = FirebaseFirestore.instance;
+      // await FirebaseFirestore.instance.collection('capsules').doc().set({
+      //   'title': title,
+      //   'description': description,
+      //   'unlockDate': _selectedDate,
+      //   'privacy': _privacy.toLowerCase(), // private, public, specific
+      //   'visibleTo': await _computeVisibleToUids(_privacy),
+      //   'photoUrls': photoUrls,
+      //   'videoUrls': videoUrls,
+      //   'audioUrls': audioUrls,
+      //   'fileUrls': fileUrls,
+      //   'createdAt': FieldValue.serverTimestamp(),
+      //   'status': 'locked',
+      //   'ownerId': FirebaseAuth.instance.currentUser!.uid, // Ensure user is signed in
+      // });
+      final capsule = TimeCapsule(
+            id: '', // Firestore will auto-generate this
+            title: title,
+            description: description,
+            unlockDate: _selectedDate!,
+            privacy: _privacy.toLowerCase(),
+            visibleTo: await _computeVisibleToUids(_privacy),
+            photoUrls: photoUrls,
+            videoUrls: videoUrls,
+            audioUrls: audioUrls,
+            fileUrls: fileUrls,
+            createdAt: DateTime.now(),
+            status: 'locked',
+          );
 
+      await capsuleService.createCapsule(capsule);
       debugPrint('Title: $title');
       debugPrint('Description: $description');
       debugPrint('Unlock Date: $_selectedDate');
@@ -693,16 +462,12 @@ class _CreateTimeCapsulePageState extends State<CreateTimeCapsulePage> {
       debugPrint('Audio: $audioUrls');
       debugPrint('Other Files: $fileUrls');
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Capsule created and files uploaded successfully!')),
-      );
-
+      showSuccessMessage('Capsule created and files uploaded successfully!');
       Navigator.pop(context);
+
     } catch (e) {
       debugPrint('Submission error: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to create capsule. Please try again.')),
-      );
+      showErrorMessage('Failed to create capsule. Please try again.');
     } finally {
       setState(() => _isLoading = false);
     }
@@ -766,7 +531,7 @@ class _CreateTimeCapsulePageState extends State<CreateTimeCapsulePage> {
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(kToolbarHeight),
         child: AppBar(
-          title: const Text('Create Capsule', style: TextStyle(color: Colors.white)),
+          title: const Text('Create Capsule', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
           flexibleSpace: Container(
             decoration: const BoxDecoration(
               gradient: LinearGradient(
@@ -781,178 +546,197 @@ class _CreateTimeCapsulePageState extends State<CreateTimeCapsulePage> {
           iconTheme: const IconThemeData(color: Colors.white),
         ),
       ),
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-        child: ListView(
-          children: [
-            const Text('Title', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-            const SizedBox(height: 6),
-            TextField(
-              controller: _titleController,
-              decoration: const InputDecoration(
-                hintText: 'Enter capsule title',
-                border: OutlineInputBorder(),
-                contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-              ),
-            ),
+      body: Stack(
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            child: ListView(
+              children: [
+                const Text('Title', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                const SizedBox(height: 6),
+                TextField(
+                  controller: _titleController,
+                  decoration: const InputDecoration(
+                    hintText: 'Enter capsule title',
+                    border: OutlineInputBorder(),
+                    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                  ),
+                ),
 
-            SizedBox(height: _verticalSpace),
+                SizedBox(height: _verticalSpace),
 
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  const Icon(Icons.perm_media, color: Colors.blue, size: 28),
-                  const SizedBox(width: 12),
-                  Expanded(
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.perm_media, color: Colors.blue, size: 28),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: const [
+                            Text('Add Media',
+                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.blue)),
+                            SizedBox(height: 4),
+                            Text(
+                              'Make your capsule more memorable with photos, videos, and files',
+                              style: TextStyle(fontSize: 13, color: Colors.black54),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        icon: Icon(
+                          _showMediaSection ? Icons.expand_less : Icons.expand_more,
+                          color: Colors.blue,
+                        ),
+                        onPressed: () => setState(() => _showMediaSection = !_showMediaSection),
+                        tooltip: _showMediaSection ? 'Hide media section' : 'Show media section',
+                      ),
+                    ],
+                  ),
+                ),
+
+                if (_showMediaSection) ...[
+                  _buildSectionCard('Photos', Icons.photo, _photoFiles, _addPhoto),
+                  _buildSectionCard('Videos', Icons.videocam, _videoFiles, _addVideo),
+                  _buildSectionCard('Audio', Icons.audiotrack, _audioFiles, _addAudio),
+                  _buildSectionCard('Files', Icons.insert_drive_file, _otherFiles, _addFile),
+                ],
+
+                SizedBox(height: _verticalSpace),
+
+                // Description Editor
+                Card(
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  elevation: 2,
+                  margin: const EdgeInsets.symmetric(vertical: 8),
+                  child: Padding(
+                    padding: const EdgeInsets.all(12.0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      children: const [
-                        Text('Add Media',
-                            style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 18,
-                                color: Colors.blue)),
-                        SizedBox(height: 4),
-                        Text('Make your capsule more memorable with photos, videos, and files',
-                            style: TextStyle(fontSize: 13, color: Colors.black54)),
+                      children: [
+                        const Text('Description', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                        const SizedBox(height: 6),
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.grey.shade400),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Column(
+                            children: [
+                              SizedBox(height: 200, child: quill.QuillEditor.basic(controller: _quillController)),
+                              if (_showToolbar) quill.QuillSimpleToolbar(controller: _quillController),
+                              Align(
+                                alignment: Alignment.centerRight,
+                                child: IconButton(
+                                  icon: Icon(_showToolbar ? Icons.expand_less : Icons.expand_more,
+                                      color: Colors.blue.shade700),
+                                  onPressed: () => setState(() => _showToolbar = !_showToolbar),
+                                  tooltip: _showToolbar ? 'Hide toolbar' : 'Show toolbar',
+                                ),
+                              )
+                            ],
+                          ),
+                        ),
                       ],
                     ),
                   ),
-                  IconButton(
-                    icon: Icon(
-                      _showMediaSection ? Icons.expand_less : Icons.expand_more,
-                      color: Colors.blue,
-                    ),
-                    onPressed: () => setState(() => _showMediaSection = !_showMediaSection),
-                    tooltip: _showMediaSection ? 'Hide media section' : 'Show media section',
-                  ),
-                ],
-              ),
-            ),
-            if (_showMediaSection) ...[
-              _buildSectionCard('Photos', Icons.photo, _photoFiles, _addPhoto),
-              _buildSectionCard('Videos', Icons.videocam, _videoFiles, _addVideo),
-              _buildSectionCard('Audio', Icons.audiotrack, _audioFiles, _addAudio),
-              _buildSectionCard('Files', Icons.insert_drive_file, _otherFiles, _addFile),
-            ],
-
-            SizedBox(height: _verticalSpace),
-
-            Card(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              elevation: 2,
-              margin: const EdgeInsets.symmetric(vertical: 8),
-              child: Padding(
-                padding: const EdgeInsets.all(12.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('Description', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                    const SizedBox(height: 6),
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey.shade400),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Column(
-                        children: [
-                          SizedBox(height: 200, child: quill.QuillEditor.basic(controller: _quillController)),
-                          if (_showToolbar)
-                            quill.QuillSimpleToolbar(controller: _quillController),
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: IconButton(
-                              icon: Icon(_showToolbar ? Icons.expand_less : Icons.expand_more, color: Colors.blue.shade700),
-                              onPressed: () => setState(() => _showToolbar = !_showToolbar),
-                              tooltip: _showToolbar ? 'Hide toolbar' : 'Show toolbar',
-                            ),
-                          )
-                        ],
-                      ),
-                    ),
-                  ],
                 ),
-              ),
-            ),
 
-            SizedBox(height: _verticalSpace),
+                SizedBox(height: _verticalSpace),
 
-            Card(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              elevation: 2,
-              margin: const EdgeInsets.symmetric(vertical: 8),
-              child: Padding(
-                padding: const EdgeInsets.all(12.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('Unlock Date', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                    const SizedBox(height: 6),
-                    GestureDetector(
-                      onTap: _pickDate,
-                      child: AbsorbPointer(
-                        child: TextField(
-                          decoration: InputDecoration(
-                            hintText: _selectedDate != null
-                                ? DateFormat('dd/MM/yyyy').format(_selectedDate!)
-                                : 'DD/MM/YYYY',
-                            suffixIcon: Icon(Icons.calendar_today, color: Colors.blue.shade700),
-                            border: const OutlineInputBorder(),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                // Unlock Date
+                Card(
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  elevation: 2,
+                  margin: const EdgeInsets.symmetric(vertical: 8),
+                  child: Padding(
+                    padding: const EdgeInsets.all(12.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('Unlock Date', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                        const SizedBox(height: 6),
+                        GestureDetector(
+                          onTap: _pickDate,
+                          child: AbsorbPointer(
+                            child: TextField(
+                              decoration: InputDecoration(
+                                hintText: _selectedDate != null
+                                    ? DateFormat('dd/MM/yyyy').format(_selectedDate!)
+                                    : 'DD/MM/YYYY',
+                                suffixIcon: Icon(Icons.calendar_today, color: Colors.blue.shade700),
+                                border: const OutlineInputBorder(),
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                              ),
+                            ),
                           ),
                         ),
-                      ),
+                      ],
                     ),
-                  ],
+                  ),
+                ),
+
+                SizedBox(height: _verticalSpace),
+
+                // Privacy
+                Card(
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  elevation: 2,
+                  margin: const EdgeInsets.symmetric(vertical: 8),
+                  child: Padding(
+                    padding: const EdgeInsets.all(12.0),
+                    child: _buildPrivacyToggle(),
+                  ),
+                ),
+
+                SizedBox(height: _verticalSpace),
+
+                // Submit
+                ElevatedButton(
+                  onPressed: _handleFormSubmission,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue.shade700,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                  child: const Text('Create Capsule', style: TextStyle(fontSize: 16, color: Colors.white)),
+                ),
+
+                SizedBox(height: _verticalSpace),
+
+                // Debug Test Button
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const UserCapsulesTestPage()),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red.shade700,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                  child: const Text('Test Result', style: TextStyle(fontSize: 16, color: Colors.white)),
+                ),
+              ],
+            ),
+          ),
+          
+          if (_isLoading)
+            Container(
+              color: Colors.black.withOpacity(0.4),
+              child: const Center(
+                child: CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                 ),
               ),
             ),
-
-            SizedBox(height: _verticalSpace),
-
-            Card(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              elevation: 2,
-              margin: const EdgeInsets.symmetric(vertical: 8),
-              child: Padding(
-                padding: const EdgeInsets.all(12.0),
-                child: _buildPrivacyToggle(),
-              ),
-            ),
-
-            SizedBox(height: _verticalSpace),
-
-            ElevatedButton(
-              onPressed: _handleFormSubmission,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue.shade700,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-              ),
-              child: const Text('Create Capsule', style: TextStyle(fontSize: 16, color: Colors.white)),
-            ),
-            SizedBox(height: _verticalSpace),
-
-            ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const UserCapsulesTestPage()),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red.shade700,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-              ),
-              child: const Text('Test Result', style: TextStyle(fontSize: 16, color: Colors.white)),
-            )
-
-          ],
-        ),
+        ],
       ),
     );
   }
