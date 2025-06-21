@@ -46,24 +46,24 @@ class _MemoriesTabState extends State<MemoriesTab> {
     });
   }
 
-  void showSuccessMessage(String message) {
-    final context = navigatorKey.currentContext;
-    if (context != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message), backgroundColor: Colors.green),
-      );
-    }
-  }
+  // void showSuccessMessage(String message) {
+  //   final context = navigatorKey.currentContext;
+  //   if (context != null) {
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       SnackBar(content: Text(message), backgroundColor: Colors.green),
+  //     );
+  //   }
+  // }
 
 
-  void showErrorMessage(String message) {
-    final context = navigatorKey.currentContext;
-    if (context != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message), backgroundColor: Colors.red),
-      );
-    }
-  }
+  // void showErrorMessage(String message) {
+  //   final context = navigatorKey.currentContext;
+  //   if (context != null) {
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       SnackBar(content: Text(message), backgroundColor: Colors.red),
+  //     );
+  //   }
+  // }
 
   
 

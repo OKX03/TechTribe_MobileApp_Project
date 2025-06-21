@@ -82,23 +82,23 @@ class _CapsuleListViewState extends State<CapsuleListView> {
   );
 }
 
-  // void showSuccessMessage(String message) {
-  //   final context = navigatorKey.currentContext;
-  //   if (context != null) {
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       SnackBar(content: Text(message), backgroundColor: Colors.green),
-  //     );
-  //   }
-  // }
+  void showSuccessMessage(String message) {
+    final context = navigatorKey.currentContext;
+    if (context != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message), backgroundColor: Colors.green),
+      );
+    }
+  }
 
-  // void showErrorMessage(String message) {
-  //   final context = navigatorKey.currentContext;
-  //   if (context != null) {
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       SnackBar(content: Text(message), backgroundColor: Colors.red),
-  //     );
-  //   }
-  // }
+  void showErrorMessage(String message) {
+    final context = navigatorKey.currentContext;
+    if (context != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message), backgroundColor: Colors.red),
+      );
+    }
+  }
 
 
   void _confirmDelete(BuildContext context, CapsuleService service, String capsuleId) {
@@ -115,16 +115,19 @@ class _CapsuleListViewState extends State<CapsuleListView> {
           TextButton(
             child: const Text("Delete", style: TextStyle(color: Colors.red)),
             onPressed: () async {
-              try {
-                await service.deleteCapsule(capsuleId);
-                if (!mounted) return;
-                Navigator.pop(dialogContext);
-                showSuccessMessage( "Capsule deleted successfully!");
-              } catch (e) {
-                if (!mounted) return;
-                Navigator.pop(dialogContext);
-                showErrorMessage("Failed to delete capsule.");
-              }
+              Navigator.of(dialogContext).pop();
+             try {
+              await service.deleteCapsule(capsuleId);
+              if (!mounted) return;
+              // Navigator.pop(dialogContext);
+              showSuccessMessage( "Capsule deleted successfully!");
+            } catch (e) {
+              if (!mounted) return;
+              Navigator.pop(dialogContext);
+              showErrorMessage("Failed to delete capsule.");
+            }
+
+
             },
           ),
         ],
@@ -281,11 +284,11 @@ class _CapsuleListViewState extends State<CapsuleListView> {
                   );
 
                   if (!mounted) return;
-                  Navigator.pop(dialogContext);
+                   Navigator.of(dialogContext).pop();
                   showSuccessMessage("Capsule updated successfully!");
                 } catch (e) {
                   if (!mounted) return;
-                  Navigator.pop(dialogContext);
+                  Navigator.of(dialogContext).pop();
                   showErrorMessage("Failed to update capsule.");
                 }
               },

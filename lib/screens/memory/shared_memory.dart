@@ -214,7 +214,9 @@ class _SharedWithYouTabState extends State<SharedWithYouTab> {
                                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                                         child: Row(
                                           children: [
-                                            CircleAvatar(radius: 16, backgroundImage: NetworkImage(profilePic)),
+                                            CircleAvatar(radius: 16, backgroundImage: profilePic.toString().startsWith('http')
+                                            ? NetworkImage(profilePic)
+                                            : AssetImage('assets/images/default_profile_picture.jpg') as ImageProvider,),
                                             const SizedBox(width: 8),
                                             Expanded(
                                               child: Text(

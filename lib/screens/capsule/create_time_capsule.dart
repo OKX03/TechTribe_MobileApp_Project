@@ -25,6 +25,8 @@ class CreateTimeCapsulePage extends StatefulWidget {
 class _CreateTimeCapsulePageState extends State<CreateTimeCapsulePage> {
   final TextEditingController _titleController = TextEditingController();
   final quill.QuillController _quillController = quill.QuillController.basic();
+  static const int _maxDescriptionLength = 500;
+
   bool _showToolbar = false;
   bool _isLoading = false;
   bool _showMediaSection = false;
@@ -43,6 +45,7 @@ class _CreateTimeCapsulePageState extends State<CreateTimeCapsulePage> {
   bool _isPickingVideo = false; 
   bool _isPickingAudio = false; 
   bool _isPickingFile = false; 
+
 
   Future<void> _addPhoto() async {
     if (_isPickingImage) return;
@@ -389,6 +392,11 @@ class _CreateTimeCapsulePageState extends State<CreateTimeCapsulePage> {
       return;
     }
 
+    if (description.length > _maxDescriptionLength) {
+      showErrorMessage('Description cannot exceed $_maxDescriptionLength characters.');
+      return;
+    }
+
     if (_selectedDate == null) {
       showErrorMessage('Please select an unlock date.');
       return;
@@ -552,7 +560,13 @@ class _CreateTimeCapsulePageState extends State<CreateTimeCapsulePage> {
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             child: ListView(
               children: [
-                const Text('Title', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+               const Text.rich(
+                  TextSpan(
+                    text: 'Title ',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    children: [TextSpan(text: '*', style: TextStyle(color: Colors.red))],
+                  ),
+                ),
                 const SizedBox(height: 6),
                 TextField(
                   controller: _titleController,
@@ -617,7 +631,27 @@ class _CreateTimeCapsulePageState extends State<CreateTimeCapsulePage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('Description', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                        Row(
+                          children: const [
+                            Text('Description', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                            Text(' *', style: TextStyle(color: Colors.red, fontSize: 16)),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        const Text(
+                          'Maximum 500 characters',
+                          style: TextStyle(fontSize: 12, color: Colors.grey),
+                        ),
+                        // Align(
+                        //   alignment: Alignment.centerRight,
+                        //   child: Text(
+                        //     '$_descriptionCharCount/$_maxDescriptionLength',
+                        //     style: TextStyle(
+                        //       color: _descriptionCharCount > _maxDescriptionLength ? Colors.red : Colors.grey,
+                        //       fontSize: 12,
+                        //     ),
+                        //   ),
+                        // ),
                         const SizedBox(height: 6),
                         Container(
                           padding: const EdgeInsets.all(8),
@@ -627,7 +661,12 @@ class _CreateTimeCapsulePageState extends State<CreateTimeCapsulePage> {
                           ),
                           child: Column(
                             children: [
-                              SizedBox(height: 200, child: quill.QuillEditor.basic(controller: _quillController)),
+                              SizedBox(
+                                  height: 200,
+                                  child: quill.QuillEditor.basic(
+                                    controller: _quillController,
+                                  ),
+                                ),
                               if (_showToolbar) quill.QuillSimpleToolbar(controller: _quillController),
                               Align(
                                 alignment: Alignment.centerRight,
@@ -709,20 +748,20 @@ class _CreateTimeCapsulePageState extends State<CreateTimeCapsulePage> {
                 SizedBox(height: _verticalSpace),
 
                 // Debug Test Button
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const UserCapsulesTestPage()),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red.shade700,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  ),
-                  child: const Text('Test Result', style: TextStyle(fontSize: 16, color: Colors.white)),
-                ),
+                // ElevatedButton(
+                //   onPressed: () {
+                //     Navigator.push(
+                //       context,
+                //       MaterialPageRoute(builder: (_) => const UserCapsulesTestPage()),
+                //     );
+                //   },
+                //   style: ElevatedButton.styleFrom(
+                //     backgroundColor: Colors.red.shade700,
+                //     padding: const EdgeInsets.symmetric(vertical: 14),
+                //     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                //   ),
+                //   child: const Text('Test Result', style: TextStyle(fontSize: 16, color: Colors.white)),
+                // ),
               ],
             ),
           ),

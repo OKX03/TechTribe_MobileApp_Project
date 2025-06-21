@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../app.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -18,60 +19,9 @@ class _RegisterPageState extends State<RegisterPage> {
   bool _isObscured1 = true;
   bool _isObscured2 = true;
 
-  // Future<void> register() async {
-  //   // Check if password and confirmation match
-  //   if (passwordController.text.trim() != confirmPasswordController.text.trim()) {
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       const SnackBar(content: Text("Passwords do not match")),
-  //     );
-  //     return;
-  //   }
-
-  //   try {
-  //     final userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
-  //       email: emailController.text.trim(),
-  //       password: passwordController.text.trim(),
-  //     );
-
-  //     final user = userCredential.user;
-  //     final username = usernameController.text.trim();
-
-  //     if (user != null) {
-  //       await user.updateDisplayName(username);
-  //       await user.sendEmailVerification();
-
-  //       final userRef = FirebaseDatabase.instance.ref().child('users').child(user.uid);
-  //       await userRef.set({
-  //         'username': username,
-  //         'email': user.email,
-  //         'user_type': 'user',
-  //         'profile_picture': 'default_profile_picture.jpg',
-  //         'gender': '',
-  //         'age': '',
-  //         'birthday': '',
-  //       });
-  //     }
-
-  //     if (!mounted) return;
-
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       const SnackBar(content: Text("Registration successful. Verification email sent.")),
-  //     );
-
-  //     Navigator.pop(context);
-  //   } on FirebaseAuthException catch (e) {
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       SnackBar(content: Text(e.message ?? "Registration failed")),
-  //     );
-  //   }
-  // }
-
   Future<void> register() async {
-    if (passwordController.text.trim() !=
-        confirmPasswordController.text.trim()) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Passwords do not match")));
+    if (passwordController.text.trim() != confirmPasswordController.text.trim()) {
+      showErrorMessage("Passwords do not match");
       return;
     }
 
@@ -103,18 +53,11 @@ class _RegisterPageState extends State<RegisterPage> {
 
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Registration successful. Verification email sent."),
-        ),
-      );
-
-      Navigator.pop(context);
-    } on FirebaseAuthException catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.message ?? "Registration failed")),
-      );
-    }
+      showSuccessMessage("Registration successful. Verification email sent.");
+        Navigator.pop(context);
+      } on FirebaseAuthException catch (e) {
+        showErrorMessage(e.message ?? "Registration failed");
+      }
   }
 
   @override

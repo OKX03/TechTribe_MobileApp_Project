@@ -1,29 +1,182 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:intl/intl.dart';
+
 import '../user/profile.dart';
+import '../memory/shared_memory_details_page.dart';
+import '../../services/memory_service.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
+  Widget _buildSharedMemories(MemoryService memoryService, String userId) {
+    return StreamBuilder<QuerySnapshot>(
+      stream: memoryService.getSharedMemories(userId),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+       if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+        return Center(
+          child: Card(
+            elevation: 4,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            margin: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch, // To make image full width
+              children: [
+                ClipRRect(
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                  child: Image.asset(
+                    'assets/images/home_image.png',
+                    height: 300,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  child: Column(
+                    children: [
+                      Text(
+                        'No shared memories yet!',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                      SizedBox(height: 8),
+                      Text(
+                        'Welcome to Memorime! Seal your memories in capsules and unlock them with your friends.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                      SizedBox(height: 16),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      }
+        final memories = snapshot.data!.docs
+            .map((doc) => MapEntry(doc.id, doc.data() as Map<String, dynamic>))
+            .where((entry) {
+              final unlockedAt = (entry.value['unlockedAt'] as Timestamp?)?.toDate();
+              return unlockedAt != null && unlockedAt.isBefore(DateTime.now());
+            })
+            .toList()
+          ..sort((a, b) {
+            final aDate = (a.value['unlockedAt'] as Timestamp).toDate();
+            final bDate = (b.value['unlockedAt'] as Timestamp).toDate();
+            return aDate.compareTo(bDate);
+          });
+
+        final top3 = memories.take(3).toList();
+
+        return ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: top3.length,
+          itemBuilder: (context, index) {
+            final docId = top3[index].key;
+            final memory = top3[index].value;
+            final ownerId = memory['ownerId']; 
+            final title = memory['title'] ?? 'Untitled';
+            final description = memory['description'] ?? '';
+            final unlockedAt = (memory['unlockedAt'] as Timestamp).toDate();
+            final createdAt = (memory['createdAt'] as Timestamp).toDate();
+            final headerImage = (memory['photoUrls'] as List?)?.isNotEmpty == true
+                ? memory['photoUrls'][0]
+                : null;
+
+            return FutureBuilder<DocumentSnapshot>(
+              future: memoryService.getUserProfile(ownerId),
+              builder: (context, userSnapshot) {
+                if (!userSnapshot.hasData) return const SizedBox();
+                final userData = userSnapshot.data!.data() as Map<String, dynamic>?;
+                final username = userData?['username'] ?? 'Unknown';
+                final profilePic = userData?['profile_picture'] ??
+                    'https://www.gravatar.com/avatar/placeholder?d=mp';
+
+                return GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => SharedMemoryDetailPage(
+                          memoryId: docId,
+                          memoryData: memory,
+                        ),
+                      ),
+                    );
+                  },
+                  child: Card(
+                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    elevation: 4,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          child: Row(
+                            children: [
+                              CircleAvatar(radius: 16, backgroundImage: NetworkImage(profilePic)),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  username,
+                                  style: const TextStyle(fontWeight: FontWeight.bold),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        ClipRRect(
+                          borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                          child: headerImage != null
+                              ? Image.network(headerImage, height: 180, width: double.infinity, fit: BoxFit.cover)
+                              : Image.asset('assets/images/default_image.png', height: 180, width: double.infinity, fit: BoxFit.cover),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                              const SizedBox(height: 6),
+                              Text(description, maxLines: 2, overflow: TextOverflow.ellipsis),
+                              const SizedBox(height: 8),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text("Created: ${DateFormat('dd/MM/yyyy').format(createdAt)}",
+                                      style: TextStyle(fontSize: 12, color: Colors.blue.shade300)),
+                                  Text("Unlocks: ${DateFormat('dd/MM/yyyy').format(unlockedAt)}",
+                                      style: TextStyle(fontSize: 12, color: Colors.blue.shade300)),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
-    final memories = [
-      {
-        'user': 'Issabelle',
-        'avatar': 'https://randomuser.me/api/portraits/women/1.jpg',
-        'image': 'https://images.unsplash.com/photo-1506744038136-46273834b3fb',
-        'title': 'China Trip',
-        'emoji': '🗺️',
-      },
-      {
-        'user': 'You',
-        'avatar': null,
-        'image': 'https://images.unsplash.com/photo-1519125323398-675f0ddb6308',
-        'title': 'Minecraft',
-        'emoji': '🎮',
-      },
-    ];
+    final memoryService = MemoryService();
 
     return Scaffold(
       backgroundColor: const Color(0xFFF6F8FC),
@@ -127,7 +280,7 @@ class HomePage extends StatelessWidget {
               ],
             ),
           ),
-          // Section Title
+
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
             child: Text(
@@ -140,175 +293,95 @@ class HomePage extends StatelessWidget {
               ),
             ),
           ),
-          // Memory Cards
-          ...memories.map(
-            (memory) => Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Card(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(18),
-                ),
-                elevation: 4,
-                shadowColor: Colors.blue.withOpacity(0.12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+
+          if (user != null) _buildSharedMemories(memoryService, user.uid),
+
+          const SizedBox(height: 80), // For spacing at bottom
+        ],
+      ),
+
+      // THESE GO OUTSIDE THE ListView
+      bottomNavigationBar: BottomAppBar(
+        shape: const CircularNotchedRectangle(),
+              notchMargin: 8.0,
+              child: SizedBox(
+                height: 64,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
-                    ListTile(
-                      leading: CircleAvatar(
-                        backgroundImage:
-                            memory['avatar'] != null
-                                ? NetworkImage(memory['avatar']!)
-                                : null,
-                        backgroundColor: Colors.blue[100],
-                        child:
-                            memory['avatar'] == null
-                                ? const Icon(Icons.person, color: Colors.blue)
-                                : null,
-                      ),
-                      title: Text(
-                        memory['user']!,
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                    ClipRRect(
-                      borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(0),
-                        topRight: Radius.circular(0),
-                        bottomLeft: Radius.circular(18),
-                        bottomRight: Radius.circular(18),
-                      ),
-                      child: Image.network(
-                        memory['image']!,
-                        height: 180,
-                        width: double.infinity,
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            '${memory['title']} ${memory['emoji']}',
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () {
+                          Navigator.pushNamed(context, '/home');
+                        },
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: const [
+                            Icon(Icons.home, color: Colors.blue),
+                            Text(
+                              'Home',
+                              style: TextStyle(color: Colors.blue, fontSize: 14),
                             ),
-                          ),
-                          Row(
-                            children: [
-                              IconButton(
-                                icon: const Icon(
-                                  Icons.favorite_border,
-                                  color: Colors.blue,
-                                ),
-                                onPressed: () {},
-                              ),
-                              IconButton(
-                                icon: const Icon(
-                                  Icons.comment_outlined,
-                                  color: Colors.blue,
-                                ),
-                                onPressed: () {},
-                              ),
-                            ],
-                          ),
-                        ],
+                          ],
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () {
+                          Navigator.pushNamed(context, '/friends');
+                        },
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: const [
+                            Icon(Icons.people, color: Colors.blueGrey),
+                            Text(
+                              'Friends',
+                              style: TextStyle(color: Colors.blueGrey, fontSize: 14),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 56), // Space for FAB
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () {
+                          Navigator.pushNamed(context, '/memory');
+                        },
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: const [
+                            Icon(Icons.photo_album, color: Colors.blueGrey),
+                            Text(
+                              'Memory',
+                              style: TextStyle(color: Colors.blueGrey, fontSize: 14),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () {
+                          Navigator.pushNamed(context, '/timeline');
+                        },
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: const [
+                            Icon(Icons.timeline, color: Colors.blueGrey),
+                            Text(
+                              'Timeline',
+                              style: TextStyle(color: Colors.blueGrey, fontSize: 14),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ],
                 ),
               ),
             ),
-          ),
-          const SizedBox(height: 80),
-        ],
-      ),
-      bottomNavigationBar: BottomAppBar(
-        shape: const CircularNotchedRectangle(),
-        notchMargin: 8.0,
-        child: SizedBox(
-          height: 64,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              Expanded(
-                child: GestureDetector(
-                  onTap: () {
-                    Navigator.pushNamed(context, '/home');
-                  },
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: const [
-                      Icon(Icons.home, color: Colors.blue),
-                      Text(
-                        'Home',
-                        style: TextStyle(color: Colors.blue, fontSize: 14),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              Expanded(
-                child: GestureDetector(
-                  onTap: () {
-                    Navigator.pushNamed(context, '/friends');
-                  },
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: const [
-                      Icon(Icons.people, color: Colors.blueGrey),
-                      Text(
-                        'Friends',
-                        style: TextStyle(color: Colors.blueGrey, fontSize: 14),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(width: 56), // Space for FAB
-              Expanded(
-                child: GestureDetector(
-                  onTap: () {
-                    Navigator.pushNamed(context, '/memory');
-                  },
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: const [
-                      Icon(Icons.photo_album, color: Colors.blueGrey),
-                      Text(
-                        'Memory',
-                        style: TextStyle(color: Colors.blueGrey, fontSize: 14),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              Expanded(
-                child: GestureDetector(
-                  onTap: () {
-                    Navigator.pushNamed(context, '/timeline');
-                  },
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: const [
-                      Icon(Icons.timeline, color: Colors.blueGrey),
-                      Text(
-                        'Timeline',
-                        style: TextStyle(color: Colors.blueGrey, fontSize: 14),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
       floatingActionButton: Container(
         height: 64,
         width: 64,

@@ -200,9 +200,14 @@ class _SharedMemoryDetailPageState extends State<SharedMemoryDetailPage> {
                         final username = userData['username'] ?? 'Unknown';
                         return Row(
                           children: [
-                            CircleAvatar(backgroundImage: NetworkImage(profilePic), radius: 20),
-                            const SizedBox(width: 10),
-                            Text(username, style: const TextStyle(fontWeight: FontWeight.bold))
+                            CircleAvatar(
+                              radius: 20,
+                              backgroundImage: profilePic.toString().startsWith('http')
+                                  ? NetworkImage(profilePic)
+                                  : AssetImage('assets/images/default_profile_picture.jpg') as ImageProvider,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(username, style: const TextStyle(fontWeight: FontWeight.bold)),
                           ],
                         );
                       },

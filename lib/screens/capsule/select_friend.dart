@@ -135,6 +135,7 @@ class _SelectFriendsPageState extends State<SelectFriendsPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        iconTheme: const IconThemeData(color: Colors.white),
         title: const Text("Select Friends or Groups", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
           flexibleSpace: Container(
             decoration: const BoxDecoration(
@@ -223,7 +224,7 @@ class _SelectFriendsPageState extends State<SelectFriendsPage> {
         onPressed: _submitSelection,
         backgroundColor: Colors.blue.shade700,
         label: const Text("Done", style: TextStyle(fontSize: 16, color: Colors.white)),
-        icon: const Icon(Icons.check),
+        icon: const Icon(Icons.check, color: Colors.white),
       ),
     );
   }
