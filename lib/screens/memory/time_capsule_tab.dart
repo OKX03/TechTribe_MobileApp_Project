@@ -5,6 +5,7 @@ import 'package:memorime_v1/models/time_capsule.dart';
 
 import 'components/capsule_list_view.dart';
 import 'components/capsule_grid_view.dart';
+import '../capsule/sharetoyou.dart'; // Import your shared tab
 
 import '../../services/capsule_service.dart';
 
@@ -17,6 +18,7 @@ class TimeCapsuleTab extends StatefulWidget {
 
 class _TimeCapsuleTabState extends State<TimeCapsuleTab> {
   bool isListView = true;
+  bool showSharedTab = false; // <-- Add this
   late String userId;
   late CapsuleService capsuleService;
   String _sortBy = 'created';
@@ -47,9 +49,9 @@ class _TimeCapsuleTabState extends State<TimeCapsuleTab> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  "Your Capsules",
-                  style: TextStyle(
+                Text(
+                  showSharedTab ? "Capsules Shared With You" : "Your Capsules",
+                  style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
                     color: Colors.black,
@@ -57,108 +59,112 @@ class _TimeCapsuleTabState extends State<TimeCapsuleTab> {
                 ),
                 IconButton(
                   color: Colors.blueAccent,
-                  onPressed: () {},
-                  icon: const Icon(Icons.screen_share_outlined),
-                ),
-              ],
-            ),
-          ),
-
-          // Toggle View Icon Row
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8.0),
-            child: Row(
-              children: [
-                _buildToggleIcon(
-                  icon: Icons.list_rounded,
-                  isActive: isListView,
-                  onTap: () {
+                  onPressed: () {
                     setState(() {
-                      isListView = true;
+                      showSharedTab = !showSharedTab;
                     });
                   },
-                ),
-                _buildToggleIcon(
-                  icon: Icons.grid_view_rounded,
-                  isActive: !isListView,
-                  onTap: () {
-                    setState(() {
-                      isListView = false;
-                    });
-                  },
+                  icon: Icon(
+                    Icons.screen_share_outlined,
+                    color: showSharedTab ? Colors.green : Colors.blueAccent,
+                  ),
+                  tooltip: showSharedTab ? "Show Your Capsules" : "Show Capsules Shared With You",
                 ),
               ],
             ),
           ),
 
-          // Sort by Dropdown
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: Row(
-              children: [
-                const Text("Sort by: "),
-                DropdownButton<String>(
-                  value: _sortBy,
-                  items: const [
-                    DropdownMenuItem(value: 'created', child: Text('Created Date')),
-                    DropdownMenuItem(value: 'unlock', child: Text('Unlock Date')),
-                  ],
-                  onChanged: (val) {
-                    setState(() => _sortBy = val!);
-                  },
-                ),
-              ],
+          if (!showSharedTab) ...[
+            // Toggle View Icon Row
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8.0),
+              child: Row(
+                children: [
+                  _buildToggleIcon(
+                    icon: Icons.list_rounded,
+                    isActive: isListView,
+                    onTap: () {
+                      setState(() {
+                        isListView = true;
+                      });
+                    },
+                  ),
+                  _buildToggleIcon(
+                    icon: Icons.grid_view_rounded,
+                    isActive: !isListView,
+                    onTap: () {
+                      setState(() {
+                        isListView = false;
+                      });
+                    },
+                  ),
+                ],
+              ),
             ),
-          ),
 
-          const SizedBox(height: 6.0),
+            // Sort by Dropdown
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Row(
+                children: [
+                  const Text("Sort by: "),
+                  DropdownButton<String>(
+                    value: _sortBy,
+                    items: const [
+                      DropdownMenuItem(value: 'created', child: Text('Created Date')),
+                      DropdownMenuItem(value: 'unlock', child: Text('Unlock Date')),
+                    ],
+                    onChanged: (val) {
+                      setState(() => _sortBy = val!);
+                    },
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 6.0),
+          ],
 
-          // Capsule List/Grid
+          // Capsule List/Grid or Shared Tab
           Expanded(
-            child: StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('capsules')
-                  .where('ownerId', isEqualTo: userId)
-                  .orderBy('unlockDate')
-                  .snapshots(),
-              builder: (context, snapshot) {
-                if (!snapshot.hasData) {
-                  return const Center(child: CircularProgressIndicator());
-                }
+            child: showSharedTab
+                ? const SharedToYouTab()
+                : StreamBuilder<QuerySnapshot>(
+                    stream: FirebaseFirestore.instance
+                        .collection('capsules')
+                        .where('ownerId', isEqualTo: userId)
+                        .orderBy('unlockDate')
+                        .snapshots(),
+                    builder: (context, snapshot) {
+                      if (!snapshot.hasData) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
 
-                final docs = snapshot.data!.docs;
-                final now = DateTime.now();
-                final List<TimeCapsule> lockedCapsules = [];
+                      final docs = snapshot.data!.docs;
+                      final now = DateTime.now();
+                      final List<TimeCapsule> lockedCapsules = [];
 
-                for (final doc in docs) {
-                  final capsule = TimeCapsule.fromJson(doc.data() as Map<String, dynamic>, doc.id);
+                      for (final doc in docs) {
+                        final capsule = TimeCapsule.fromJson(doc.data() as Map<String, dynamic>, doc.id);
 
-                  // Only add locked capsules to the list
-                  // OLD:
-                  // if (capsule.unlockDate.isAfter(now)) {
-                  //   lockedCapsules.add(capsule);
-                  // }
+                        final unlockDate = capsule.unlockDate;
+                        final isToday = unlockDate.year == now.year &&
+                            unlockDate.month == now.month &&
+                            unlockDate.day == now.day;
 
-                  // NEW: Show capsules if unlock date is today or in the future
-                  final unlockDate = capsule.unlockDate;
-                  final isToday = unlockDate.year == now.year &&
-                      unlockDate.month == now.month &&
-                      unlockDate.day == now.day;
+                        if (unlockDate.isAfter(now) || isToday) {
+                          lockedCapsules.add(capsule);
+                        }
+                      }
 
-                  if (unlockDate.isAfter(now) || isToday) {
-                    lockedCapsules.add(capsule);
-                  }
-                }
+                      if (lockedCapsules.isEmpty) {
+                        return const Center(child: Text('No locked capsules available.'));
+                      }
 
-                if (lockedCapsules.isEmpty) {
-                  return const Center(child: Text('No locked capsules available.'));
-                }
-
-                return isListView
-                    ? CapsuleListView(capsuleService: capsuleService)
-                    : CapsuleGridView(capsules: lockedCapsules, month: DateTime.now());
-              },
-            ),
+                      return isListView
+                          ? CapsuleListView(capsuleService: capsuleService)
+                          : CapsuleGridView(capsules: lockedCapsules, month: DateTime.now());
+                    },
+                  ),
           ),
         ],
       ),
