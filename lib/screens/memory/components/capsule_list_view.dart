@@ -23,9 +23,9 @@ class _CapsuleListViewState extends State<CapsuleListView> {
   void initState() {
     super.initState();
     // final userId = FirebaseAuth.instance.currentUser!.uid;
-    widget.capsuleService.fetchAllCapsules().then((capsules) {
-      widget.capsuleService.migrateUnlockedCapsules(capsules);
-    });
+    // widget.capsuleService.fetchAllCapsules().then((capsules) {
+    //   widget.capsuleService.migrateUnlockedCapsules(capsules);
+    // });
   }
 
   @override
@@ -46,37 +46,38 @@ class _CapsuleListViewState extends State<CapsuleListView> {
         return ListView.builder(
           itemCount: capsules.length,
           itemBuilder: (context, index) {
-          final capsule = capsules[index];
-          final now = DateTime.now();
-            // Calculate days left
-          final daysLeft = capsule.unlockDate.difference(DateTime.now()).inDays;
+            final capsule = capsules[index];
+            final now = DateTime.now();
+            final daysLeft = capsule.unlockDate.difference(DateTime(now.year, now.month, now.day)).inDays;
 
-          // final isUnlocked = capsule.unlockDate.isBefore(now) ||
-          //                     capsule.unlockDate.year == now.year &&
-          //                     capsule.unlockDate.month == now.month &&
-          //                     capsule.unlockDate.day == now.day;
+            // Check if unlock date is today
+            final isToday = capsule.unlockDate.year == now.year &&
+                capsule.unlockDate.month == now.month &&
+                capsule.unlockDate.day == now.day;
 
-          final isUnlocked = daysLeft<=0;
+            final isUnlocked = daysLeft < 0;
 
-          return GestureDetector(
-            onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('This capsule is still locked.')),
-              );
-            },
-
-            child: CapsuleCard(
-              title: capsule.title,
-              unlockDate: _formatDate(capsule.unlockDate),
-              daysLeft: daysLeft.toString(),
-              createdDate: _formatDate(capsule.createdAt),
-              isUnlocked: isUnlocked,
-              onEdit: () => _showEditDialog(context, widget.capsuleService, capsule),
-              onDelete: () => _confirmDelete(context, widget.capsuleService, capsule.id),
-
-            ),
-          );
-        },
+            return GestureDetector(
+              onTap: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('This capsule is still locked.')),
+                );
+              },
+              child: CapsuleCard(
+                title: capsule.title,
+                unlockDate: _formatDate(capsule.unlockDate),
+                daysLeft: daysLeft.toString(),
+                createdDate: _formatDate(capsule.createdAt),
+                isUnlocked: isUnlocked,
+                isToday: isToday,
+                onEdit: () => _showEditDialog(context, widget.capsuleService, capsule),
+                onDelete: () => _confirmDelete(context, widget.capsuleService, capsule.id),
+                onUnlock: isToday && !isUnlocked
+                    ? () => _showUnlockDialog(context, capsule)
+                    : null,
+              ),
+            );
+          },
       );
     },
   );
@@ -310,6 +311,34 @@ class _CapsuleListViewState extends State<CapsuleListView> {
     ];
     return months[month];
   }
+
+  void _showUnlockDialog(BuildContext context, TimeCapsule capsule) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text("Unlock Capsule"),
+        content: const Text("Do you want to unlock this capsule now?"),
+        actions: [
+          TextButton(
+            child: const Text("Cancel"),
+            onPressed: () => Navigator.pop(ctx),
+          ),
+          ElevatedButton(
+            child: const Text("Unlock"),
+            onPressed: () async {
+              Navigator.pop(ctx);
+              try {
+                await widget.capsuleService.migrateToMemory(capsule);
+                showSuccessMessage("Capsule unlocked and moved to Memories!");
+              } catch (e) {
+                showErrorMessage("Failed to unlock capsule.");
+              }
+            },
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 
@@ -318,9 +347,11 @@ class CapsuleCard extends StatelessWidget {
   final String unlockDate;
   final String daysLeft;
   final String createdDate;
-   final bool isUnlocked;
+  final bool isUnlocked;
+  final bool isToday;
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
+  final VoidCallback? onUnlock;
 
   const CapsuleCard({
     super.key,
@@ -329,8 +360,10 @@ class CapsuleCard extends StatelessWidget {
     required this.daysLeft,
     required this.createdDate,
     required this.isUnlocked,
+    required this.isToday,
     this.onEdit,
     this.onDelete,
+    this.onUnlock,
   });
 
   @override
@@ -413,10 +446,23 @@ class CapsuleCard extends StatelessWidget {
                     ),
                   ],
                 ),
+                // Unlock button if today and not unlocked
+                if (isToday && !isUnlocked && onUnlock != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8.0),
+                    child: ElevatedButton.icon(
+                      icon: const Icon(Icons.lock_open),
+                      label: const Text("Unlock Now"),
+                      onPressed: onUnlock,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blueAccent,
+                        foregroundColor: Colors.white,
+                      ),
+                    ),
+                  ),
               ],
             ),
           ),
-
           // Top-right buttons
           Positioned(
             top: 8,

@@ -105,15 +105,21 @@ class CapsuleRepository {
   }
 
   Stream<List<TimeCapsule>> getLockedCapsules(String userId) {
-    final now = Timestamp.fromDate(DateTime.now());
+    final now = DateTime.now();
     return _db
         .collection('capsules')
         .where('ownerId', isEqualTo: userId)
-        .where('unlockDate', isGreaterThan: now)
         .orderBy('unlockDate')
         .snapshots()
         .map((snapshot) =>
-            snapshot.docs.map((doc) => TimeCapsule.fromJson(doc.data(), doc.id)).toList());
+            snapshot.docs.map((doc) => TimeCapsule.fromJson(doc.data(), doc.id))
+                .where((capsule) {
+                  final unlockDate = capsule.unlockDate;
+                  final isToday = unlockDate.year == now.year &&
+                      unlockDate.month == now.month &&
+                      unlockDate.day == now.day;
+                  return unlockDate.isAfter(now) || isToday;
+                }).toList());
   }
 
   Stream<List<TimeCapsule>> getAllOrderedByUnlockDate(String userId) {
@@ -140,5 +146,14 @@ class CapsuleRepository {
     batch.delete(capsuleRef);
 
     await batch.commit();
+  }
+
+  Stream<List<TimeCapsule>> streamUnlockedCapsules(String userId) {
+    return getAllOrderedByUnlockDate(userId).map((capsules) {
+      final now = DateTime.now();
+      return capsules.where((capsule) =>
+        capsule.unlockDate.isBefore(now) || capsule.unlockDate.isAtSameMomentAs(now)
+      ).toList();
+    });
   }
 }

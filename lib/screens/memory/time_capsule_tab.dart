@@ -133,11 +133,19 @@ class _TimeCapsuleTabState extends State<TimeCapsuleTab> {
                 for (final doc in docs) {
                   final capsule = TimeCapsule.fromJson(doc.data() as Map<String, dynamic>, doc.id);
 
-                  // If unlocked, migrate it
-                  if (capsule.unlockDate.isBefore(now) || capsule.unlockDate.isAtSameMomentAs(now)) {
-                    capsuleService.migrateToMemory(capsule);
-                  } else {
-                    // Still locked
+                  // Only add locked capsules to the list
+                  // OLD:
+                  // if (capsule.unlockDate.isAfter(now)) {
+                  //   lockedCapsules.add(capsule);
+                  // }
+
+                  // NEW: Show capsules if unlock date is today or in the future
+                  final unlockDate = capsule.unlockDate;
+                  final isToday = unlockDate.year == now.year &&
+                      unlockDate.month == now.month &&
+                      unlockDate.day == now.day;
+
+                  if (unlockDate.isAfter(now) || isToday) {
                     lockedCapsules.add(capsule);
                   }
                 }

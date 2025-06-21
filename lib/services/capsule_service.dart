@@ -178,16 +178,9 @@ class CapsuleService {
   Stream<List<TimeCapsule>> streamUnlockedCapsules() {
     return _repository.getAllOrderedByUnlockDate(userId).map((capsules) {
       final now = DateTime.now();
-      final unlockedCapsules = <TimeCapsule>[];
-
-      for (final capsule in capsules) {
-        if (capsule.unlockDate.isBefore(now) || capsule.unlockDate.isAtSameMomentAs(now)) {
-          _repository.migrateToMemory(capsule, userId);
-          unlockedCapsules.add(capsule);
-        }
-      }
-
-      return unlockedCapsules;
+      return capsules.where((capsule) =>
+        capsule.unlockDate.isBefore(now) || capsule.unlockDate.isAtSameMomentAs(now)
+      ).toList();
     });
   }
 
