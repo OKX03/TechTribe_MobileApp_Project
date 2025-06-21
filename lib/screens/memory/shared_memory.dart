@@ -250,6 +250,7 @@ class _SharedWithYouTabState extends State<SharedWithYouTab> {
                                           padding: const EdgeInsets.all(10),
                                           child: Column(
                                             crossAxisAlignment: CrossAxisAlignment.start,
+                                            
                                             children: [
                                               Text(
                                                 title,

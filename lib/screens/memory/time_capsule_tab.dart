@@ -19,6 +19,7 @@ class _TimeCapsuleTabState extends State<TimeCapsuleTab> {
   bool isListView = true;
   late String userId;
   late CapsuleService capsuleService;
+  String _sortBy = 'created';
 
   @override
   void initState() {
@@ -84,6 +85,26 @@ class _TimeCapsuleTabState extends State<TimeCapsuleTab> {
                     setState(() {
                       isListView = false;
                     });
+                  },
+                ),
+              ],
+            ),
+          ),
+
+          // Sort by Dropdown
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: Row(
+              children: [
+                const Text("Sort by: "),
+                DropdownButton<String>(
+                  value: _sortBy,
+                  items: const [
+                    DropdownMenuItem(value: 'created', child: Text('Created Date')),
+                    DropdownMenuItem(value: 'unlock', child: Text('Unlock Date')),
+                  ],
+                  onChanged: (val) {
+                    setState(() => _sortBy = val!);
                   },
                 ),
               ],
