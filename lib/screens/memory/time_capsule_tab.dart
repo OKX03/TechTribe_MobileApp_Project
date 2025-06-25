@@ -126,8 +126,7 @@ class _TimeCapsuleTabState extends State<TimeCapsuleTab> {
 
           // Capsule List/Grid or Shared Tab
           Expanded(
-            child: showSharedTab
-                ? const SharedToYouTab()
+            child: showSharedTab ? SharedToYouTab()
                 : StreamBuilder<QuerySnapshot>(
                     stream: FirebaseFirestore.instance
                         .collection('capsules')

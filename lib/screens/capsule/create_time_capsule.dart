@@ -9,11 +9,12 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'package:firebase_auth/firebase_auth.dart';
-import 'testing_widget.dart';
+// import 'testing_widget.dart';
 import '../../app.dart';
 import '../capsule/select_friend.dart';
 import '../../services/capsule_service.dart';
 import '../../models/time_capsule.dart';
+
 
 class CreateTimeCapsulePage extends StatefulWidget {
   const CreateTimeCapsulePage({super.key});
@@ -430,28 +431,15 @@ class _CreateTimeCapsulePageState extends State<CreateTimeCapsulePage> {
         return;
       }
 
-      // final firestore = FirebaseFirestore.instance;
-      // await FirebaseFirestore.instance.collection('capsules').doc().set({
-      //   'title': title,
-      //   'description': description,
-      //   'unlockDate': _selectedDate,
-      //   'privacy': _privacy.toLowerCase(), // private, public, specific
-      //   'visibleTo': await _computeVisibleToUids(_privacy),
-      //   'photoUrls': photoUrls,
-      //   'videoUrls': videoUrls,
-      //   'audioUrls': audioUrls,
-      //   'fileUrls': fileUrls,
-      //   'createdAt': FieldValue.serverTimestamp(),
-      //   'status': 'locked',
-      //   'ownerId': FirebaseAuth.instance.currentUser!.uid, // Ensure user is signed in
-      // });
+      final visibleTo = await _computeVisibleToUids(_privacy);
+
       final capsule = TimeCapsule(
-            id: '', // Firestore will auto-generate this
+            id: '', 
             title: title,
             description: description,
             unlockDate: _selectedDate!,
             privacy: _privacy.toLowerCase(),
-            visibleTo: await _computeVisibleToUids(_privacy),
+            visibleTo: visibleTo,
             photoUrls: photoUrls,
             videoUrls: videoUrls,
             audioUrls: audioUrls,
@@ -469,6 +457,8 @@ class _CreateTimeCapsulePageState extends State<CreateTimeCapsulePage> {
       debugPrint('Videos: $videoUrls');
       debugPrint('Audio: $audioUrls');
       debugPrint('Other Files: $fileUrls');
+
+
 
       showSuccessMessage('Capsule created and files uploaded successfully!');
       Navigator.pop(context);

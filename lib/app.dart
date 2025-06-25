@@ -39,7 +39,11 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       navigatorKey: navigatorKey,
       title: 'Memorime',
-      theme: ThemeData(primarySwatch: Colors.blue, fontFamily: 'Roboto'),
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+        fontFamily: 'Roboto',
+        scaffoldBackgroundColor: Colors.white, // Set global background to white
+      ),
 
       localizationsDelegates: const [
           GlobalMaterialLocalizations.delegate,
