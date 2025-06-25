@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 
 import '../user/profile.dart';
+import '../notification/notification_page.dart';
 import '../memory/shared_memory_details_page.dart';
 import '../../services/memory_service.dart';
 
@@ -227,7 +228,7 @@ class HomePage extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.notifications_none, color: Colors.white),
             onPressed: () {
-              // Handle notification tap
+              Navigator.push(context, MaterialPageRoute(builder: (context) => const NotificationPage()));
             },
           ),
         ],
