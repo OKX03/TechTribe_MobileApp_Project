@@ -383,11 +383,22 @@ class _CapsuleListViewState extends State<CapsuleListView> {
 
           if (memoryDoc.exists) {
             Navigator.of(rootContext).push(
-              MaterialPageRoute(
-                builder: (_) => MemoryDetailPage(
-                  memoryId: capsule.id,
-                  memoryData: memoryDoc.data()!,
-                ),
+              PageRouteBuilder(
+                pageBuilder: (context, animation, secondaryAnimation) =>
+                    MemoryDetailPage(
+                      memoryId: capsule.id,
+                      memoryData: memoryDoc.data()!,
+                    ),
+                transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                  const begin = Offset(0.0, 1.0); // Start from bottom
+      const end = Offset.zero;
+      final tween = Tween(begin: begin, end: end).chain(CurveTween(curve: Curves.ease));
+      return SlideTransition(
+        position: animation.drive(tween),
+        child: child,
+      );
+    },
+                transitionDuration: const Duration(milliseconds: 600),
               ),
             );
           } else {
