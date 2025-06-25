@@ -62,6 +62,7 @@ class MemoryService {
     required List<String> audioUrls,
     required List<String> fileUrls,
     required String privacy,
+    required DateTime unlockDate,
   }) async {
     final parentMemory = await getMemory(parentMemoryId);
     final parentData = parentMemory.data() as Map<String, dynamic>;
@@ -71,7 +72,7 @@ class MemoryService {
       'title': title,
       'description': description,
       'unlockedAt': Timestamp.now(),
-      'unlockDate': Timestamp.now(),
+      'unlockDate': Timestamp.fromDate(unlockDate),
       'privacy': privacy,
       'createdAt': Timestamp.now(),
       'ownerId': ownerId,
