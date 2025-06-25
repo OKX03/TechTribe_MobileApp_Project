@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import 'reportedMemories.dart';
 
+
 class AdminHomePage extends StatefulWidget {
   const AdminHomePage({super.key});
 
@@ -242,7 +243,8 @@ class _AdminHomePageState extends State<AdminHomePage> {
       stream: FirebaseFirestore.instance.collection('users').snapshots(),
       builder: (context, usersSnapshot) {
         return StreamBuilder(
-          stream: FirebaseFirestore.instance.collection('capsules').snapshots(),
+          stream:
+              FirebaseFirestore.instance.collection('capsules').snapshots(),
           builder: (context, lockedSnapshot) {
             return StreamBuilder(
               stream:
@@ -364,4 +366,4 @@ class _AdminHomePageState extends State<AdminHomePage> {
       ),
     );
   }
-}
+} 
