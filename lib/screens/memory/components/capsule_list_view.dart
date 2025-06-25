@@ -7,6 +7,8 @@ import '../../../services/capsule_service.dart';
 import '../capsule_detailsPage.dart.dart';
 import '../../../app.dart';
 import '../../capsule/select_friend.dart';
+import '../../memory/animationUnlock.dart';
+import '../../memory/memory_details_page.dart';
 
 class CapsuleListView extends StatefulWidget {
   final CapsuleService capsuleService;
@@ -59,9 +61,7 @@ class _CapsuleListViewState extends State<CapsuleListView> {
 
             return GestureDetector(
               onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('This capsule is still locked.')),
-                );
+                _onUnlockCapsule(context, capsule);
               },
               child: CapsuleCard(
                 title: capsule.title,
@@ -73,7 +73,7 @@ class _CapsuleListViewState extends State<CapsuleListView> {
                 onEdit: () => _showEditDialog(context, widget.capsuleService, capsule),
                 onDelete: () => _confirmDelete(context, widget.capsuleService, capsule.id),
                 onUnlock: isToday && !isUnlocked
-                    ? () => _showUnlockDialog(context, capsule)
+                    ? () => _onUnlockCapsule(context, capsule)
                     : null,
               ),
             );
@@ -325,17 +325,77 @@ class _CapsuleListViewState extends State<CapsuleListView> {
           ),
           ElevatedButton(
             child: const Text("Unlock"),
-            onPressed: () async {
-              Navigator.pop(ctx);
-              try {
-                await widget.capsuleService.migrateToMemory(capsule);
-                showSuccessMessage("Capsule unlocked and moved to Memories!");
-              } catch (e) {
-                showErrorMessage("Failed to unlock capsule.");
-              }
+            onPressed: () {
+              Navigator.pop(ctx); // Close the prompt
+              _showUnlockAnimation(context, capsule); // Show animation next
             },
           ),
         ],
+      ),
+    );
+  }
+
+  void _onUnlockCapsule(BuildContext context, TimeCapsule capsule) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text("Unlock Capsule"),
+        content: const Text("Do you want to unlock this capsule now?"),
+        actions: [
+          TextButton(
+            child: const Text("Cancel"),
+            onPressed: () => Navigator.pop(ctx),
+          ),
+          ElevatedButton(
+            child: const Text("Unlock"),
+            onPressed: () {
+              Navigator.pop(ctx); // Close the prompt
+              _showUnlockAnimation(context, capsule); // Show animation next
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showUnlockAnimation(BuildContext context, TimeCapsule capsule) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => CapsuleUnlockAnimation(
+        onCompleted: () async {
+          Navigator.of(context).pop();
+
+          // Use the root navigator context for navigation
+          final rootContext = navigatorKey.currentContext;
+          if (rootContext == null) return;
+
+          // Migrate capsule to memory
+          final userId = FirebaseAuth.instance.currentUser!.uid;
+          final capsuleService = CapsuleService(userId);
+          await capsuleService.migrateToMemory(capsule);
+
+          // Fetch the memory document after unlocking
+          final memoryDoc = await FirebaseFirestore.instance
+              .collection('memories')
+              .doc(capsule.id)
+              .get();
+
+          if (memoryDoc.exists) {
+            Navigator.of(rootContext).push(
+              MaterialPageRoute(
+                builder: (_) => MemoryDetailPage(
+                  memoryId: capsule.id,
+                  memoryData: memoryDoc.data()!,
+                ),
+              ),
+            );
+          } else {
+            ScaffoldMessenger.of(rootContext).showSnackBar(
+              const SnackBar(content: Text('Memory not found!')),
+            );
+          }
+        },
       ),
     );
   }
