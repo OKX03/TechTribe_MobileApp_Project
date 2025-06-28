@@ -286,7 +286,7 @@ class _SharedWithYouTabState extends State<SharedWithYouTab> {
     );
   }
 
-  /// 🔍 Filter logic
+  //Filter logic
   Future<List<QueryDocumentSnapshot>> _filterMemories(List<QueryDocumentSnapshot> docs) async {
     final List<QueryDocumentSnapshot> result = [];
 

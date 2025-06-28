@@ -5,7 +5,7 @@ import 'package:memorime_v1/models/time_capsule.dart';
 
 import 'components/capsule_list_view.dart';
 import 'components/capsule_grid_view.dart';
-import '../capsule/sharetoyou.dart'; // Import your shared tab
+import 'sharetoyou.dart'; // Import your shared tab
 
 import '../../services/capsule_service.dart';
 

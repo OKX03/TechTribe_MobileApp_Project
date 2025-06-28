@@ -136,7 +136,7 @@ class CapsuleRepository {
     final now = DateTime.now();
     final memoryData = capsule.toJson();
     memoryData['unlockedAt'] = Timestamp.fromDate(now);
-    memoryData['createdAt'] = capsule.createdAt ?? Timestamp.fromDate(now);
+    memoryData['createdAt'] = capsule.createdAt;
     memoryData['ownerId'] = userId;
 
     final batch = _db.batch();

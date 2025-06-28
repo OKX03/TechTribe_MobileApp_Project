@@ -61,7 +61,7 @@ class MemoryDetailPage extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // 🖼️ GALLERY
+                    // GALLERY
                     if (galleryItems.isNotEmpty)
                       Padding(
                         padding: const EdgeInsets.only(bottom: 16),
@@ -91,7 +91,7 @@ class MemoryDetailPage extends StatelessWidget {
 
                     const SizedBox(height: 10),
 
-                    // 🎧 AUDIO
+                    //AUDIO
                     if (audioUrls.isNotEmpty)
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -100,7 +100,7 @@ class MemoryDetailPage extends StatelessWidget {
                         ],
                       ),
 
-                    // 📁 FILES
+                    //FILES
                     if (fileUrls.isNotEmpty)
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -127,12 +127,12 @@ class MemoryDetailPage extends StatelessWidget {
 
                     const SizedBox(height: 16),
 
-                    // 📝 DESCRIPTION
+                    //DESCRIPTION
                     Text(description, style: const TextStyle(fontSize: 16)),
 
                     const SizedBox(height: 16),
 
-                    // 📆 FOOTER: Created and Unlocked Date
+                    //FOOTER: Created and Unlocked Date
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
