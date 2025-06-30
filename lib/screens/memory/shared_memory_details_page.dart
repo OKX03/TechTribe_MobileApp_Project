@@ -149,9 +149,7 @@ class _SharedMemoryDetailPageState extends State<SharedMemoryDetailPage> {
     final videos = List<String>.from(widget.memoryData['videoUrls'] ?? []);
     final audioUrls = List<String>.from(widget.memoryData['audioUrls'] ?? []);
     final fileUrls = List<String>.from(widget.memoryData['fileUrls'] ?? []);
-   // final likedBy = List<String>.from(widget.memoryData['likedBy'] ?? []);
     
-
     final galleryItems = [
       ...photos.map((url) => {'type': 'image', 'url': url}),
       ...videos.map((url) => {'type': 'video', 'url': url}),

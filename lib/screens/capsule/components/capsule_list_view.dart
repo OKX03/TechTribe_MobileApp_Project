@@ -6,8 +6,8 @@ import '../../../repository/capsule_repository.dart';
 import '../../../services/capsule_service.dart';
 import '../capsule_detailsPage.dart.dart';
 import '../../../app.dart';
-import '../../capsule/select_friend.dart';
-import '../../memory/animationUnlock.dart';
+import '../select_friend.dart';
+import '../animationUnlock.dart';
 import '../../memory/memory_details_page.dart';
 
 class CapsuleListView extends StatefulWidget {

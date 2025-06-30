@@ -9,7 +9,6 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'package:firebase_auth/firebase_auth.dart';
-// import 'testing_widget.dart';
 import '../../app.dart';
 import '../capsule/select_friend.dart';
 import '../../services/capsule_service.dart';
@@ -632,16 +631,6 @@ class _CreateTimeCapsulePageState extends State<CreateTimeCapsulePage> {
                           'Maximum 500 characters',
                           style: TextStyle(fontSize: 12, color: Colors.grey),
                         ),
-                        // Align(
-                        //   alignment: Alignment.centerRight,
-                        //   child: Text(
-                        //     '$_descriptionCharCount/$_maxDescriptionLength',
-                        //     style: TextStyle(
-                        //       color: _descriptionCharCount > _maxDescriptionLength ? Colors.red : Colors.grey,
-                        //       fontSize: 12,
-                        //     ),
-                        //   ),
-                        // ),
                         const SizedBox(height: 6),
                         Container(
                           padding: const EdgeInsets.all(8),
@@ -736,22 +725,6 @@ class _CreateTimeCapsulePageState extends State<CreateTimeCapsulePage> {
                 ),
 
                 SizedBox(height: _verticalSpace),
-
-                // Debug Test Button
-                // ElevatedButton(
-                //   onPressed: () {
-                //     Navigator.push(
-                //       context,
-                //       MaterialPageRoute(builder: (_) => const UserCapsulesTestPage()),
-                //     );
-                //   },
-                //   style: ElevatedButton.styleFrom(
-                //     backgroundColor: Colors.red.shade700,
-                //     padding: const EdgeInsets.symmetric(vertical: 14),
-                //     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                //   ),
-                //   child: const Text('Test Result', style: TextStyle(fontSize: 16, color: Colors.white)),
-                // ),
               ],
             ),
           ),

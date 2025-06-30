@@ -42,7 +42,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
         fontFamily: 'Roboto',
-        scaffoldBackgroundColor: Colors.white, // Set global background to white
+        scaffoldBackgroundColor: Colors.white,
       ),
 
       localizationsDelegates: const [
@@ -52,7 +52,7 @@ class MyApp extends StatelessWidget {
           quill.FlutterQuillLocalizations.delegate,
       ],
       supportedLocales: const [
-        Locale('en'), // You can add more locales if needed
+        Locale('en'),
       ],
 
       initialRoute: '/login',
