@@ -10,7 +10,7 @@
 
 
     <application
-        android:label="memorime"
+        android:label="Memorime"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
 
